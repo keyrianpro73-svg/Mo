@@ -1,0 +1,17 @@
+DEPLOIEMENT (a faire dans ce dossier)
+
+Option A - ligne de commande (recommande, ~2 minutes) :
+  npm install
+  npx netlify login
+  npx netlify link          (choisir le site sirius-snck-mc)
+  npx netlify deploy --prod
+
+Option B - GitHub :
+  Mettre ce dossier dans un depot GitHub, puis dans Netlify :
+  Add new site > Import from Git. Netlify installe les dependances tout seul.
+
+Le glisser-deposer n'installe pas les dependances : ne pas l'utiliser pour ce projet.
+
+Ensuite : ouvrir le site > "Activer la synchro en ligne".
+Verification : https://TON-SITE.netlify.app/api/db?id=test1234 doit repondre
+{"error":"Espace introuvable."} (et non une page 404 de Netlify).

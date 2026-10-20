@@ -1,4 +1,4 @@
-mport { getStore } from "@netlify/blobs";
+import { getStore } from "@netlify/blobs";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {

@@ -399,6 +399,14 @@
 
                         <div class="border-t border-snck-border pt-4 space-y-4">
                             <label class="block text-sm font-medium text-gray-300">Itinéraire et Choix des Voies aux Terminus</label>
+
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Ligne</label>
+                                <select id="sillon-ligne" onchange="changerLigne()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                                    <option value="fontaine">Ligne Fontaine - Ville</option>
+                                    <option value="pavillon">Ligne Hôpital - Pavillon Noir (voie unique)</option>
+                                </select>
+                            </div>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -428,11 +436,37 @@
                                         <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
                                     </select>
                                 </div>
+                                <div id="container-voies-pavillon" class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4" style="display:none">
+                                    <div id="cv-pav-Hôpital">
+                                        <label class="block text-xs font-semibold text-blue-400 mb-1">Voie d'arrêt à Hôpital</label>
+                                        <select id="voie-pav-Hôpital" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie C">Voie C</option><option value="Voie D">Voie D</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Ville">
+                                        <label class="block text-xs font-semibold text-emerald-400 mb-1">Voie d'arrêt à Ville</label>
+                                        <select id="voie-pav-Ville" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie C">Voie C</option><option value="Voie D">Voie D</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Zoo">
+                                        <label class="block text-xs font-semibold text-amber-400 mb-1">Voie d'arrêt à Zoo</label>
+                                        <select id="voie-pav-Zoo" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Pavillon Noir">
+                                        <label class="block text-xs font-semibold text-indigo-400 mb-1">Voie d'arrêt à Pavillon Noir</label>
+                                        <select id="voie-pav-Pavillon Noir" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mt-4">
                                 <label class="block text-xs text-gray-400 mb-2">Arrêts intermédiaires et temps d'arrêt (en minutes)</label>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div id="arrets-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
                                         <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="Mairie" class="rounded bg-snck-dark border-snck-border text-blue-500"> Mairie</label>
                                         <input type="number" id="arret-duree-Mairie" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
@@ -1178,12 +1212,60 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
 
         
 
+        // ====== Lignes du réseau ======
+        // Ligne 2 : voie unique. ZC = Zone de Croisement, traitée comme une gare (arrêt possible pour croiser).
+        const LIBELLES_GARES = { 'ZC': 'ZC (Zone Croisement)' };
+        const LIGNES = {
+            fontaine: { nom: 'Ligne Fontaine - Ville', ordre: ligneOrdre, temps: tempsTrajetSecondes, voieUnique: false },
+            pavillon: {
+                nom: 'Ligne Hôpital - Pavillon Noir',
+                ordre: ['Hôpital', 'Ville', 'Zoo', 'ZC', 'Pavillon Noir'],
+                temps: {
+                    'Hôpital->Ville': 35, 'Ville->Zoo': 25, 'Zoo->ZC': 26, 'ZC->Pavillon Noir': 13,
+                    'Ville->Hôpital': 35, 'Zoo->Ville': 25, 'ZC->Zoo': 26, 'Pavillon Noir->ZC': 13
+                },
+                voieUnique: true
+            }
+        };
+        // Voies possibles par gare sur la ligne Hôpital - Pavillon Noir
+        const VOIES_PAVILLON = {
+            'Hôpital': ['Voie C', 'Voie D'],
+            'Ville': ['Voie C', 'Voie D'],
+            'Zoo': ['Voie A', 'Voie B'],
+            'Pavillon Noir': ['Voie A', 'Voie B']
+        };
+        // Les sillons créés avant l'ajout des lignes n'ont pas de champ "ligne" : ils restent sur Fontaine - Ville.
+        function ligneDe(s) { return LIGNES[s && s.ligne] || LIGNES.fontaine; }
+
+        function changerLigne() {
+            const L = ligneDe({ ligne: document.getElementById('sillon-ligne').value });
+            const opts = L.ordre.map(g => `<option value="${g}">${escapeHtml(LIBELLES_GARES[g] || g)}</option>`).join('');
+            const o = document.getElementById('sillon-origine'), t = document.getElementById('sillon-terminus');
+            o.innerHTML = opts; t.innerHTML = opts;
+            o.value = L.ordre[0]; t.value = L.ordre[L.ordre.length - 1];
+            document.getElementById('arrets-container').innerHTML = L.ordre.slice(1, -1).map(g => `
+                <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="${g}" class="rounded bg-snck-dark border-snck-border text-blue-500"> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
+                    <input type="number" id="arret-duree-${g}" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                </div>`).join('');
+            updateVoiesOptions();
+        }
+
         function updateVoiesOptions() {
+            const ligneOrdre = ligneDe({ ligne: document.getElementById('sillon-ligne').value }).ordre;
             const origine = document.getElementById('sillon-origine').value;
             const terminus = document.getElementById('sillon-terminus').value;
-            document.getElementById('container-voie-fontaine').style.display = (origine === 'Fontaine' || terminus === 'Fontaine') ? 'block' : 'none';
-            document.getElementById('container-voie-ville').style.display = (origine === 'Ville' || terminus === 'Ville') ? 'block' : 'none';
+            const ligneCle = document.getElementById('sillon-ligne').value;
+            const estPavillon = ligneCle === 'pavillon';
+            document.getElementById('container-voie-fontaine').style.display = (!estPavillon && (origine === 'Fontaine' || terminus === 'Fontaine')) ? 'block' : 'none';
+            document.getElementById('container-voie-ville').style.display = (!estPavillon && (() => { const a = ligneOrdre.indexOf(origine), b = ligneOrdre.indexOf(terminus), v = ligneOrdre.indexOf('Ville'); return v >= Math.min(a, b) && v <= Math.max(a, b); })()) ? 'block' : 'none';
             const iO = ligneOrdre.indexOf(origine), iT = ligneOrdre.indexOf(terminus), lo = Math.min(iO, iT), hi = Math.max(iO, iT);
+            // Ligne Hôpital - Pavillon Noir : choix de la voie dans chaque gare du parcours (ZC = croisement, sans voie)
+            document.getElementById('container-voies-pavillon').style.display = estPavillon ? 'grid' : 'none';
+            Object.keys(VOIES_PAVILLON).forEach(g => {
+                const i = ligneOrdre.indexOf(g);
+                document.getElementById('cv-pav-' + g).style.display = (estPavillon && i >= lo && i <= hi) ? 'block' : 'none';
+            });
             document.querySelectorAll('input[name="arret-inter"]').forEach(cb => {
                 const i = ligneOrdre.indexOf(cb.value), ok = i > lo && i < hi;
                 cb.disabled = !ok; if (!ok) cb.checked = false;
@@ -1201,6 +1283,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
         function openCreateSillonModule() {
             currentPlatform = 'pc';
             switchScreen('screen-create-sillon');
+            changerLigne();
             updateVoiesOptions();
             renderSillons();
         }
@@ -1230,6 +1313,8 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             const terminus = document.getElementById('sillon-terminus').value;
             const voieFontaine = document.getElementById('voie-fontaine').value;
             const voieVille = document.getElementById('voie-ville').value;
+            const ligne = document.getElementById('sillon-ligne').value;
+            const ligneOrdre = ligneDe({ ligne }).ordre;
             if (origine === terminus) { alert("L'origine et le terminus doivent être différents."); return; }
             if (sillonsState.some(x => String(x.numero).toLowerCase() === numero.toLowerCase() && x.dateBrute === dateBrute)) { alert('Un sillon avec ce numéro existe déjà à cette date.'); return; }
             const iO = ligneOrdre.indexOf(origine), iT = ligneOrdre.indexOf(terminus), lo = Math.min(iO, iT), hi = Math.max(iO, iT);
@@ -1243,13 +1328,23 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
                 arretsDurees[cb.value] = parseInt(document.getElementById(`arret-duree-${cb.value}`).value) || 0;
             });
 
+            const voies = {};
+            if (ligne === 'pavillon') {
+                Object.keys(VOIES_PAVILLON).forEach(g => {
+                    const i = ligneOrdre.indexOf(g);
+                    if (i >= lo && i <= hi) voies[g] = document.getElementById('voie-pav-' + g).value;
+                });
+            }
+
             sillonsState.push({
-                id: uuid(), numero, dateBrute, dateJJMM, depart, composition, origine, terminus, voieFontaine, voieVille,
+                id: uuid(), numero, ligne, dateBrute, dateJJMM, depart, composition, origine, terminus, voieFontaine, voieVille, voies,
                 arretsInter, arretsDurees, statut: 'Libre', retard: 0, retardManuel: 0, isStarted: false, motifRetard: ''
             });
 
             sauvegarderStorage();
             document.getElementById('form-sillon').reset();
+            document.getElementById('sillon-ligne').value = ligne;
+            changerLigne();
             updateVoiesOptions();
             renderSillons();
         }
@@ -1274,6 +1369,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
                                 <span class="ml-3 px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${escapeHtml(sillon.statut)}</span>
                             </div>
                             <div class="text-xs text-gray-400">Composition : ${escapeHtml(sillon.composition)}</div>
+                            <div class="text-xs text-gray-400">Ligne : ${escapeHtml(ligneDe(sillon).nom)}</div>
                             <div class="text-xs text-gray-400">Parcours : ${escapeHtml(parcours)}</div>
                         </div>
                         <button onclick="deleteSillon(${index})" class="px-3 py-1.5 bg-red-500/10 text-red-400 text-xs rounded-lg cursor-pointer hover:bg-red-500/20">Supprimer</button>
@@ -1353,6 +1449,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
 
         function determinerVoieGare(gare, sillon) {
             if (gare === '*Stockage' || gare === '*Dépot') return '';
+            if (sillon.ligne === 'pavillon') return (sillon.voies && sillon.voies[gare]) || '';
             if (gare === 'Fontaine') return sillon.voieFontaine || 'Voie A';
             if (gare === 'Ville') return sillon.voieVille || 'Voie A';
             return (ligneOrdre.indexOf(sillon.terminus) > ligneOrdre.indexOf(sillon.origine)) ? 'Voie A' : 'Voie B';
@@ -1364,6 +1461,7 @@ function calculerHorairesParcours() {
     let [h, m] = sillon.depart.split(':').map(Number);
     let totalMin = h * 60 + m;
     
+    const ligneOrdre = ligneDe(sillon).ordre, tempsTrajetSecondes = ligneDe(sillon).temps;
     let idxOrigine = ligneOrdre.indexOf(sillon.origine);
     let idxTerminus = ligneOrdre.indexOf(sillon.terminus);
 
@@ -1731,6 +1829,7 @@ function calculerHorairesParcours() {
             return d.getTime();
         }
         function dureeSec(s) {
+            const ligneOrdre = ligneDe(s).ordre, tempsTrajetSecondes = ligneDe(s).temps;
             const a = ligneOrdre.indexOf(s.origine), b = ligneOrdre.indexOf(s.terminus), dir = b > a ? 1 : -1;
             const g = dir > 0 ? ligneOrdre.slice(a, b + 1) : ligneOrdre.slice(b, a + 1).reverse();
             let t = 0;

@@ -24,6 +24,16 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #plan-wrap .plan-panel { overflow-x: auto; border-radius: 6px; border: 8px solid #2b2b2e; background: #050506; }
+        #plan-wrap svg { display: block; min-width: 1100px; width: 100%; height: auto; }
+        #plan-wrap .rail { fill: none; stroke: #7d7d82; stroke-width: 3; }
+        #plan-wrap .led { fill: #1c1c1f; stroke: #5a5a60; stroke-width: 1; }
+        #plan-wrap text { font-family: "Trebuchet MS", Verdana, sans-serif; fill: #9a9a9f; pointer-events: none; }
+        #plan-wrap .nm { font-size: 11px; font-weight: bold; fill: #e8e8ea; }
+        #plan-wrap .tl { font-size: 9px; }
+        #plan-wrap .trainlbl { font-size: 10px; font-weight: bold; fill: #ffb43a; stroke: #050506; stroke-width: 3px; paint-order: stroke; }
+    </style>
 </head>
 <body class="bg-snck-dark text-gray-100 min-h-screen font-sans selection:bg-blue-500 selection:text-white">
 
@@ -227,6 +237,15 @@
                                 <p class="text-gray-400 text-xs">Sélectionner un sillon pour lancer la cabine mobile.</p>
                             </div>
                         </button>
+                        <button onclick="openPlanModule('tel')" class="w-full p-6 rounded-2xl bg-snck-card border border-snck-border hover:border-orange-500 text-left transition-all hover:-translate-y-1 group cursor-pointer flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-diagram-project"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Plan de Circulation</h3>
+                                <p class="text-gray-400 text-xs">Position estimée des trains sur le réseau.</p>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -247,9 +266,9 @@
             </header>
 
             <div class="flex-1 flex items-center justify-center p-6">
-                <div class="max-w-3xl w-full text-center space-y-8">
+                <div class="max-w-5xl w-full text-center space-y-8">
                     <h2 class="text-3xl font-extrabold">Menu Principal PC</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <button onclick="openHorairistePerturbations()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-blue-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
                             <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
                                 <i class="fa-solid fa-calendar-days"></i>
@@ -264,6 +283,14 @@
                             </div>
                             <h3 class="text-xl font-bold mb-1">Conduire</h3>
                             <p class="text-gray-400 text-sm">Sélectionnez un sillon créé pour lancer la simulation de conduite PC.</p>
+                        </button>
+
+                        <button onclick="openPlanModule('pc')" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-orange-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-diagram-project"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Plan de Circulation</h3>
+                            <p class="text-gray-400 text-sm">Plan de voies avec la position estimée des trains en temps réel.</p>
                         </button>
                     </div>
                 </div>
@@ -341,10 +368,15 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-400 mb-2">Ligne concernée</label>
                             <select id="perturbation-ligne" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
-                                <option value="Toute la ligne">Toute la ligne</option>
+                                <option value="Tout le réseau">Tout le réseau</option>
+                                <option value="Toute la ligne Fontaine - Ville">Toute la ligne Fontaine - Ville</option>
+                                <option value="Toute la ligne Hôpital - Pavillon Noir">Toute la ligne Hôpital - Pavillon Noir</option>
                                 <option value="Section Fontaine - Mairie">Section Fontaine - Mairie</option>
                                 <option value="Section Mairie - Hôpital">Section Mairie - Hôpital</option>
                                 <option value="Section Hôpital - Ville">Section Hôpital - Ville</option>
+                                <option value="Section Hôpital - Ville (ligne Pavillon Noir)">Section Hôpital - Ville (ligne Pavillon Noir)</option>
+                                <option value="Section Ville - Zoo">Section Ville - Zoo</option>
+                                <option value="Section Zoo - Pavillon Noir">Section Zoo - Pavillon Noir</option>
                             </select>
                         </div>
                         <div class="flex justify-end">
@@ -508,6 +540,29 @@
         </div>
 
         <!-- 5. MODULE : SÉLECTION DU SILLON POUR CONDUIRE -->
+        <!-- PLAN DE CIRCULATION -->
+        <div id="screen-plan" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="retourMenuPlan()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Menu
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2"><i class="fa-solid fa-diagram-project text-orange-400"></i> Plan de Circulation</h2>
+                </div>
+                <div id="plan-clock" class="text-sm font-mono bg-snck-dark px-3 py-1.5 rounded-lg border border-snck-border text-gray-300">00:00:00</div>
+            </header>
+            <div class="flex-1 p-4 md:p-6 max-w-[1600px] mx-auto w-full space-y-4 overflow-y-auto">
+                <div id="plan-wrap">
+                    <div class="plan-panel"><svg id="plan-svg" viewBox="0 0 1720 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan de voie">
+                        <defs><filter id="plan-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                        <g id="plan-back"></g><g id="plan-trk"></g><g id="plan-trains"></g>
+                    </svg></div>
+                </div>
+                <div class="text-xs text-gray-500">Point orange = position estimée d'après les horaires, le retard et les retards déclarés par gare. Contour blanc = service pris par un conducteur.</div>
+                <div id="plan-legende" class="space-y-2"></div>
+            </div>
+        </div>
+
         <div id="screen-conduire" class="app-screen hidden flex-1 flex flex-col">
             <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
                 <button onclick="retourMenuConduite()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
@@ -545,6 +600,7 @@
                 </div>
             </header>
             <div class="flex-1 p-6 max-w-5xl mx-auto w-full space-y-6">
+                <div id="pc-cabine-perturbations" class="space-y-3"></div>
                 <div class="bg-snck-card border border-snck-border rounded-2xl p-6 shadow-lg flex justify-between items-center">
                     <div>
                         <span id="pc-cabine-numero" class="text-xs font-mono px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">SK-000</span>
@@ -576,6 +632,7 @@
             </header>
 
             <div class="flex-1 px-4 pt-6 pb-56 max-w-md mx-auto w-full overflow-y-auto">
+                <div id="tel-cabine-perturbations" class="space-y-3 mb-5"></div>
                 <div id="tel-cabine-parcours-list" class="space-y-6"></div>
             </div>
 
@@ -642,9 +699,20 @@
                     <input type="text" id="retard-motif" required placeholder="ex: Incident, régulation..." class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
                 </div>
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">Minutes</label>
-                    <input type="number" id="retard-minutes" required min="1" value="5" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                    <label class="block text-sm text-gray-400 mb-1">Appliquer</label>
+                    <select id="retard-gare" onchange="majChampsRetard()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white text-sm"></select>
                 </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Minutes</label>
+                        <input type="number" id="retard-minutes" required min="0" value="5" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                    </div>
+                    <div id="retard-secondes-wrap" class="hidden">
+                        <label class="block text-sm text-gray-400 mb-1">Secondes</label>
+                        <input type="number" id="retard-secondes" min="0" max="59" value="0" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                    </div>
+                </div>
+                <div id="retards-gares-liste" class="space-y-1"></div>
                 <div class="flex justify-end gap-3 pt-2">
                     <button type="button" onclick="closeRetardModal()" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300">Annuler</button>
                     <button type="submit" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold">Appliquer</button>
@@ -1455,115 +1523,395 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             return (ligneOrdre.indexOf(sillon.terminus) > ligneOrdre.indexOf(sillon.origine)) ? 'Voie A' : 'Voie B';
         }
 
-function calculerHorairesParcours() {
-    if (activeSillonIndex === null) return [];
-    const sillon = sillonsState[activeSillonIndex];
-    let [h, m] = sillon.depart.split(':').map(Number);
-    let totalMin = h * 60 + m;
-    
-    const ligneOrdre = ligneDe(sillon).ordre, tempsTrajetSecondes = ligneDe(sillon).temps;
-    let idxOrigine = ligneOrdre.indexOf(sillon.origine);
-    let idxTerminus = ligneOrdre.indexOf(sillon.terminus);
+        // ============================================================
+        // HORAIRES : MÊME CALCUL QUE AVANT, AVEC HH:MM:SS ET RETARDS PAR GARE
+        // ============================================================
+        function fmtHMS(ms) {
+            const d = new Date(ms), p = n => String(n).padStart(2, '0');
+            return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+        }
 
-    // --- CORRECTION SENS INVERSE ---
-    // Si on va "à reculons" (ex: Ville vers *Dépot), on inverse le tableau de gares
-    let direction = idxTerminus > idxOrigine ? 1 : -1;
-    let sousLigne;
-    
-    if (direction === 1) {
-        // Sens normal (Fontaine -> Ville)
-        sousLigne = ligneOrdre.slice(idxOrigine, idxTerminus + 1);
-    } else {
-        // Sens inverse (Ville -> Fontaine) : on prend le slice et on inverse l'ordre
-        sousLigne = ligneOrdre.slice(idxTerminus, idxOrigine + 1).reverse();
-    }
-    // -------------------------------
+        // Retard global (sillon.retard, en minutes) + retards déclarés à partir d'une gare (sillon.retardsGares, en secondes).
+        // sansEntreeGare : ignore l'entrée de cette gare (sert au bouton « Je suis à cette gare »).
+        function timelineSillon(sillon, sansEntreeGare) {
+            const L = ligneDe(sillon), ordre = L.ordre, temps = L.temps;
+            const iO = ordre.indexOf(sillon.origine), iT = ordre.indexOf(sillon.terminus);
+            if (iO < 0 || iT < 0 || iO === iT) return [];
+            const dir = iT > iO ? 1 : -1;
+            const sous = dir === 1 ? ordre.slice(iO, iT + 1) : ordre.slice(iT, iO + 1).reverse();
+            const inter = sillon.arretsInter || [], durees = sillon.arretsDurees || {};
+            const entrees = (sillon.retardsGares || []).filter(e => e.gare !== sansEntreeGare);
+            const base = departTs(sillon), globalSec = (sillon.retard || 0) * 60;
+            let secTheo = 0;
+            return sous.map((gare, idx) => {
+                if (idx > 0) {
+                    const prev = sous[idx - 1];
+                    secTheo += temps[dir === 1 ? `${prev}->${gare}` : `${gare}->${prev}`] || 0;
+                    if (inter.includes(prev)) secTheo += (durees[prev] || 0) * 60;
+                }
+                let extra = 0;
+                entrees.forEach(e => { const k = sous.indexOf(e.gare); if (k >= 0 && k <= idx) extra += e.sec || 0; });
+                const theo = base + secTheo * 1000;
+                const arr = theo + (globalSec + extra) * 1000;
+                const dernier = idx === sous.length - 1;
+                const arretMin = (!dernier && inter.includes(gare)) ? (durees[gare] || 0) : 0;
+                return { gare, idx, served: idx === 0 || dernier || inter.includes(gare), theo, arr, dep: arr + arretMin * 60000, arretMin, voie: determinerVoieGare(gare, sillon) };
+            });
+        }
 
-    let horairesTheoriques = [];
-    let horairesReels = [];
-    let secTheoriques = 0;
-    let secReelles = 0;
-    let decalageSec = (sillon.retard || 0) * 60;
+        function finTs(s) { const t = timelineSillon(s); return t.length ? t[t.length - 1].arr : departTs(s); }
 
-    sousLigne.forEach((gare, idx) => {
-        if (idx > 0) {
-            let prevGare = sousLigne[idx - 1];
-            
-            // --- CORRECTION CLÉS DE TEMPS ---
-            // On adapte la clé selon le sens pour trouver le bon temps de trajet
-            let trajetKey = direction === 1 
-                ? `${prevGare}->${gare}` 
-                : `${gare}->${prevGare}`; // Inverse la clé si sens retour
-            
-            let trajetSec = tempsTrajetSecondes[trajetKey] || 0; // Si la clé n'existe pas, c'est 0 (tu devras ajouter les clés inversées dans ton objet tempsTrajetSecondes)
-            
-            secTheoriques += trajetSec;
-            secReelles += trajetSec;
-            
-            if (sillon.arretsInter.includes(prevGare)) {
-                let arretSec = (sillon.arretsDurees[prevGare] || 0) * 60;
-                secTheoriques += arretSec;
-                secReelles += arretSec;
+        function calculerHorairesParcours() {
+            if (activeSillonIndex === null) return [];
+            const sillon = sillonsState[activeSillonIndex];
+            const tl = timelineSillon(sillon);
+            if (!tl.length) return [];
+            const dernier = tl[tl.length - 1];
+            heureArriveeFinaleReelle = fmtHMS(dernier.arr);
+            heureArriveeFinaleTs = dernier.arr;
+
+            if (currentPlatform !== 'tel') {
+                document.getElementById('pc-cabine-horaires').innerText = `${fmtHMS(tl[0].arr)} ➔ ${heureArriveeFinaleReelle}`;
             }
+
+            const container = document.getElementById(currentPlatform === 'tel' ? 'tel-cabine-parcours-list' : 'pc-cabine-parcours-list');
+            container.innerHTML = '';
+
+            tl.forEach(pt => {
+                if (!pt.served) return;
+                const isOrigineTerminus = (pt.idx === 0 || pt.idx === tl.length - 1);
+                const voie = pt.voie;
+                const arretTxt = (!isOrigineTerminus && pt.arretMin) ? `${escapeHtml(pt.arretMin)} min d'arrêt` : '';
+                const timeTheo = fmtHMS(pt.theo), timeReel = fmtHMS(pt.arr);
+                const isDecale = (timeReel !== timeTheo);
+                // Bouton discret « Je suis à cette gare »
+                // Très discret : invisible sur PC tant qu'on ne survole pas la ligne, très pâle et minuscule sur mobile
+                const pin = `<button onclick="jeSuisAGare(${pt.idx})" title="Je suis à cette gare" aria-label="Je suis à cette gare" class="ml-2 text-[9px] text-gray-500 hover:text-emerald-400 cursor-pointer align-middle transition-opacity ${currentPlatform === 'tel' ? 'opacity-20 active:opacity-100' : 'opacity-0 group-hover:opacity-50 focus:opacity-100 hover:!opacity-100'}"><i class="fa-solid fa-location-dot"></i></button>`;
+
+                if (currentPlatform === 'tel') {
+                    container.innerHTML += `
+                        <div class="grid grid-cols-[76px_24px_1fr] items-start gap-2 relative">
+                            <div class="bg-indigo-500/20 text-indigo-300 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded text-center border border-indigo-400/30">${timeReel}</div>
+                            <div class="flex flex-col items-center h-full relative"><div class="w-3.5 h-3.5 rounded-full bg-[#0B0E17] border-2 border-indigo-400 z-10 my-0.5"></div><div class="w-0.5 bg-indigo-500/40 flex-1 my-1"></div></div>
+                            <div class="pb-3"><h4 class="font-extrabold text-base text-white">${escapeHtml(libelleGare(pt.gare))}${pin}</h4>${voie ? `<div class="text-xs text-indigo-300">${escapeHtml(voie)}</div>` : ''}${arretTxt ? `<div class="text-[11px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded inline-block mt-1 border border-amber-500/20">${escapeHtml(arretTxt)}</div>` : ''}</div>
+                        </div>`;
+                } else {
+                    const affichageHoraire = isDecale
+                        ? `<span class="line-through text-gray-500 text-xs mr-2">${timeTheo}</span><span class="text-amber-400 font-bold">${timeReel}</span>`
+                        : `<span class="text-emerald-400 font-bold">${timeReel}</span>`;
+                    container.innerHTML += `
+                        <div class="group relative flex items-center justify-between">
+                            <div class="absolute -left-[31px] w-4 h-4 rounded-full bg-emerald-500 border-2 border-snck-card"></div>
+                            <div>
+                                <span class="font-bold text-base">${escapeHtml(libelleGare(pt.gare))}</span>${pin}
+                                <div class="text-xs text-gray-400">${escapeHtml(voie)} ${arretTxt ? `<span class="text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 ml-2">${escapeHtml(arretTxt)}</span>` : ''}</div>
+                            </div>
+                            <div class="text-right font-mono text-sm">${affichageHoraire}</div>
+                        </div>`;
+                }
+            });
+            renderAlertesCabine();
+            return tl.map(p => fmtHMS(p.arr));
         }
-        
-        let totalSecTheo = (totalMin * 60) + secTheoriques;
-        let totalSecReel = (totalMin * 60) + secReelles + decalageSec;
 
-        // Format HH:MM (sans secondes)
-        horairesTheoriques.push(`${String(Math.floor(totalSecTheo/3600)%24).padStart(2,'0')}:${String(Math.floor((totalSecTheo%3600)/60)).padStart(2,'0')}`);
-        horairesReels.push(`${String(Math.floor(totalSecReel/3600)%24).padStart(2,'0')}:${String(Math.floor((totalSecReel%3600)/60)).padStart(2,'0')}`);
-    });
-
-    heureArriveeFinaleReelle = horairesReels[horairesReels.length - 1];
-    heureArriveeFinaleTs = departTs(sillon) + (secReelles + decalageSec) * 1000;
-    
-    if (currentPlatform !== 'tel') {
-        let [hD, mD] = sillon.depart.split(':').map(Number);
-        let depSec = (hD * 60 + mD) * 60 + (sillon.retard || 0) * 60;
-        let depReel = `${String(Math.floor(depSec/3600)%24).padStart(2,'0')}:${String(Math.floor((depSec%3600)/60)).padStart(2,'0')}`;
-        document.getElementById('pc-cabine-horaires').innerText = `${depReel} ➔ ${heureArriveeFinaleReelle}`;
-    }
-
-    const container = document.getElementById(currentPlatform === 'tel' ? 'tel-cabine-parcours-list' : 'pc-cabine-parcours-list');
-    container.innerHTML = '';
-
-    sousLigne.forEach((gare, idx) => {
-        let isOrigineTerminus = (idx === 0 || idx === sousLigne.length - 1);
-        let isDesservi = isOrigineTerminus || sillon.arretsInter.includes(gare);
-        if (!isDesservi) return;
-
-        let voie = determinerVoieGare(gare, sillon);
-        let arretTxt = (!isOrigineTerminus && sillon.arretsDurees[gare]) ? `${escapeHtml(sillon.arretsDurees[gare])} min d'arrêt` : '';
-        let timeTheo = horairesTheoriques[idx];
-        let timeReel = horairesReels[idx];
-        let isDecale = (timeReel !== timeTheo);
-
-        if (currentPlatform === 'tel') {
-            container.innerHTML += `
-                <div class="grid grid-cols-[55px_24px_1fr] items-start gap-2 relative">
-                    <div class="bg-indigo-500/20 text-indigo-300 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded text-center border border-indigo-400/30">${timeReel}</div>
-                    <div class="flex flex-col items-center h-full relative"><div class="w-3.5 h-3.5 rounded-full bg-[#0B0E17] border-2 border-indigo-400 z-10 my-0.5"></div><div class="w-0.5 bg-indigo-500/40 flex-1 my-1"></div></div>
-                    <div class="pb-3"><h4 class="font-extrabold text-base text-white">${escapeHtml(gare)}</h4>${voie ? `<div class="text-xs text-indigo-300">${escapeHtml(voie)}</div>`:''}${arretTxt ? `<div class="text-[11px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded inline-block mt-1 border border-amber-500/20">${escapeHtml(arretTxt)}</div>`:''}</div>
-                </div>`;
-        } else {
-            let affichageHoraire = isDecale 
-                ? `<span class="line-through text-gray-500 text-xs mr-2">${timeTheo}</span><span class="text-amber-400 font-bold">${timeReel}</span>`
-                : `<span class="text-emerald-400 font-bold">${timeReel}</span>`;
-
-            container.innerHTML += `
-                <div class="relative flex items-center justify-between">
-                    <div class="absolute -left-[31px] w-4 h-4 rounded-full bg-emerald-500 border-2 border-snck-card"></div>
-                    <div>
-                        <span class="font-bold text-base">${escapeHtml(gare)}</span>
-                        <div class="text-xs text-gray-400">${escapeHtml(voie)} ${arretTxt ? `<span class="text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 ml-2">${escapeHtml(arretTxt)}</span>` : ''}</div>
-                    </div>
-                    <div class="text-right font-mono text-sm">${affichageHoraire}</div>
-                </div>`;
+        function fmtDelai(sec) {
+            const a = Math.abs(Math.round(sec)), m = Math.floor(a / 60), r = a % 60;
+            const t = (m ? m + ' min' : '') + (m && r ? ' ' : '') + (r || !m ? r + ' s' : '');
+            return (sec < 0 ? '-' : '+') + t;
         }
-    });
-    return horairesReels;
-}
+
+        // ============================================================
+        // PERTURBATIONS : quel train est concerné, et affichage en cabine
+        // ============================================================
+        function perturbationFinTs(p) {
+            if (!p.heureFin) return Infinity;
+            let debut = p.ts;
+            if (!debut) {
+                const m = String(p.dateCreation || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\D+(\d{1,2}):(\d{2})/);
+                if (m) debut = new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]).getTime();
+            }
+            if (!debut) return Infinity;
+            const [h, mi] = String(p.heureFin).split(':').map(Number);
+            const d = new Date(debut); d.setHours(h, mi, 59, 999);
+            if (d.getTime() < debut) d.setDate(d.getDate() + 1);
+            return d.getTime();
+        }
+        function perturbationActive(p, now) { return p.actif !== false && (now || Date.now()) <= perturbationFinTs(p); }
+
+        function perturbationConcerne(p, sillon) {
+            const cle = sillon.ligne === 'pavillon' ? 'pavillon' : 'fontaine';
+            const ordre = ligneDe(sillon).ordre, l = String(p.ligne || '');
+            if (!l || l === 'Toute la ligne' || l === 'Tout le réseau') return true;
+            if (l.startsWith('Toute la ligne ')) return (l.includes('Pavillon') ? 'pavillon' : 'fontaine') === cle;
+            const m = l.match(/^Section (.+?) - (.+?)( \(ligne Pavillon Noir\))?$/);
+            if (!m) return true;
+            const surL2 = ['Zoo', 'ZC', 'Pavillon Noir'];
+            const cible = (m[3] || surL2.includes(m[1]) || surL2.includes(m[2])) ? 'pavillon' : 'fontaine';
+            if (cible !== cle) return false;
+            const a = ordre.indexOf(m[1]), b = ordre.indexOf(m[2]);
+            const iO = ordre.indexOf(sillon.origine), iT = ordre.indexOf(sillon.terminus);
+            if (a < 0 || b < 0 || iO < 0 || iT < 0) return false;
+            return Math.min(a, b) >= Math.min(iO, iT) && Math.max(a, b) <= Math.max(iO, iT);
+        }
+
+        function renderAlertesCabine() {
+            const s = getActif();
+            ['pc-cabine-perturbations', 'tel-cabine-perturbations'].forEach(id => {
+                const c = document.getElementById(id); if (!c) return;
+                const liste = s ? (perturbationsState || []).filter(p => perturbationActive(p) && perturbationConcerne(p, s)) : [];
+                c.innerHTML = liste.map(p => {
+                    const interr = p.type === 'Interruption';
+                    return `<div class="flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+                        <div class="w-7 h-7 shrink-0 rounded-full bg-red-600 text-white flex items-center justify-center text-sm font-black">!</div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-sm text-red-400">${interr ? 'Trafic interrompu' : 'Trafic perturbé'}</div>
+                            <div class="text-sm text-gray-200 mt-0.5">Cause : ${escapeHtml(p.nom)}</div>
+                            <div class="text-[11px] text-gray-400 mt-0.5">${escapeHtml(p.ligne || '')}${p.heureFin ? ' • fin prévue à ' + escapeHtml(p.heureFin) : ''}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            });
+        }
+
+        function libelleGare(g) { return LIBELLES_GARES[g] || g; }
+
+        function toastSirius(msg) {
+            let t = document.getElementById('toast-sirius');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'toast-sirius';
+                t.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-lg transition-opacity';
+                document.body.appendChild(t);
+            }
+            t.innerText = msg; t.style.opacity = '1';
+            clearTimeout(t._h); t._h = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+        }
+
+        // « Je suis à cette gare » : recale l'horaire de cette gare sur l'heure actuelle (retard/avance à partir d'ici)
+        function jeSuisAGare(idx) {
+            const s = getActif(); if (!s) return;
+            const tl = timelineSillon(s), pt = tl[idx]; if (!pt) return;
+            const attendu = timelineSillon(s, pt.gare)[idx].arr;
+            const diff = Math.round((Date.now() - attendu) / 1000);
+            const apres = new Set(tl.slice(idx + 1).map(p => p.gare));
+            s.retardsGares = (s.retardsGares || []).filter(e => e.gare !== pt.gare && !apres.has(e.gare));
+            s.retardsGares.push({ gare: pt.gare, sec: diff, auto: true, ts: Date.now() });
+            s.positionManuelle = { gare: pt.gare, ts: Date.now() };
+            sauvegarderStorage(true);
+            calculerHorairesParcours(); mettreAJourAffichageRetard();
+            const txt = diff === 0 ? 'à l\'heure' : fmtDelai(diff);
+            toastSirius(`Position enregistrée : ${libelleGare(pt.gare)} (${txt})`);
+        }
+
+        // ============================================================
+        // PLAN DE CIRCULATION (TCO) : position estimée des trains
+        // ============================================================
+        const PLAN_U = 76, PLAN_L = 100, PLAN_M = 144, PLAN_C = 134, PLAN_D = 154;
+        const PLAN_FONT_Y = { S2: 40, D: 54, C: 68, A: 82, B: 96, E: 110, F: 124, S1: 138 };
+        const PLAN_L1 = { 'Mairie': [430, 550], 'Hôpital': [650, 770], 'Ville': [890, 1010] };
+        const PLAN_L2 = {
+            'Hôpital': { x1: 650, x2: 770, out: 810 },
+            'Ville': { x1: 890, x2: 1010, in: 850, out: 1050 },
+            'ZC': { x1: 1120, x2: 1230, in: 1090, out: 1260 },
+            'Zoo': { x1: 1330, x2: 1430, in: 1300, out: 1460 },
+            'Pavillon Noir': { x1: 1550, x2: 1670, in: 1520 }
+        };
+        const PLAN_CROIX = { 'Fontaine': [335, 359], 'Mairie': [590, 614], 'Hôpital': [810, 834] };   // clé = gare de gauche
+        const PLAN_WP = { '*Stockage': 840, '*Dépot': 860 };
+        const PLAN_AVANT_MS = 10 * 60000, PLAN_APRES_MS = 2 * 60000;
+        let planInit = false, planPlatform = 'pc';
+
+        function planLettre(v) { return String(v || '').replace(/^Voie\s*/i, '').trim().toUpperCase(); }
+
+        function planEl(p, n, a) {
+            const e = document.createElementNS('http://www.w3.org/2000/svg', n);
+            for (const k in a) e.setAttribute(k, a[k]);
+            p.appendChild(e); return e;
+        }
+
+        function initPlan() {
+            if (planInit) return; planInit = true;
+            const back = document.getElementById('plan-back'), trk = document.getElementById('plan-trk');
+            const txt = (x, y, t, c, a) => { planEl(back, 'text', { x, y, class: c, ...(a || {}) }).textContent = t; };
+            const sec = (pts, led) => {
+                const d = 'M' + pts.map(p => p.join(',')).join('L');
+                planEl(trk, 'path', { d, class: 'rail' });
+                if (led) { const a = pts[0], b = pts[pts.length - 1]; planEl(trk, 'circle', { cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2, r: 4, class: 'led' }); }
+            };
+            const buf = (x, y, d) => planEl(back, 'path', { d: `M${x + d * 3},${y - 6}V${y + 6}M${x},${y}H${x + d * 3}`, stroke: '#b9b9bd', 'stroke-width': 2.5, fill: 'none' });
+            const stn = (x1, x2, tr) => tr.forEach(([l, y], i) => { sec([[x1, y], [x2, y]], 1); txt(x1 + 8, i % 2 ? y + 12 : y - 5, l, 'tl'); });
+            const U = PLAN_U, L = PLAN_L, M = PLAN_M, C = PLAN_C, D = PLAN_D;
+
+            // Ligne 1
+            txt(50, 24, 'FONTAINE', 'nm');
+            ['S2', 'D', 'C', 'A', 'B', 'E', 'F', 'S1'].forEach((n, i) => {
+                const y = 40 + i * 14;
+                sec([[50, y], [240, y]], 1); txt(24, y + 3, n, 'tl'); buf(46, y, -1);
+                sec([[240, y], [300, i < 4 ? U : L]]);
+            });
+            [[U, 'A'], [L, 'B']].forEach(([y]) => {
+                sec([[300, y], [430, y]], 1); sec([[550, y], [650, y]], 1); sec([[770, y], [890, y]], 1);
+            });
+            sec([[335, U], [359, L]]); sec([[590, L], [614, U]]); sec([[810, U], [834, L]]);
+            stn(430, 550, [['A', U], ['B', L]]); txt(490, 58, 'MAIRIE', 'nm', { 'text-anchor': 'middle' });
+            stn(650, 770, [['A', U], ['B', L]]);
+            stn(890, 1010, [['A', U], ['B', L]]);
+            buf(1014, U, 1); buf(1014, L, 1);
+
+            // Ligne 2 (voie unique)
+            const loop = (a, b, c, d, f) => {
+                if (a != null) { sec([[a, M], [b, C]]); sec([[a, M], [b, D]]); }
+                if (d != null) { sec([[c, C], [d, M]]); sec([[c, D], [d, M]]); }
+            };
+            stn(650, 770, [['C', C], ['D', D]]); buf(646, C, -1); buf(646, D, -1);
+            loop(null, 0, 770, 810);
+            sec([[810, M], [850, M]], 1);
+            loop(850, 890, 0, null);
+            stn(890, 1010, [['C', C], ['D', D]]);
+            loop(null, 0, 1010, 1050);
+            sec([[1050, M], [1090, M]], 1);
+            txt(1178, 118, 'ZONE DE CROISEMENT', 'tl', { 'text-anchor': 'middle' });
+            loop(1090, 1120, 0, null);
+            sec([[1120, C], [1230, C]], 1); sec([[1120, D], [1230, D]], 1);
+            loop(null, 0, 1230, 1260);
+            sec([[1260, M], [1300, M]], 1);
+            loop(1300, 1330, 0, null);
+            stn(1330, 1430, [['A', C], ['B', D]]); txt(1380, 116, 'ZOO', 'nm', { 'text-anchor': 'middle' });
+            loop(null, 0, 1430, 1460);
+            sec([[1460, M], [1520, M]], 1);
+            loop(1520, 1550, 0, null);
+            stn(1550, 1670, [['A', C], ['B', D]]); txt(1610, 116, 'PAVILLON NOIR', 'nm', { 'text-anchor': 'middle' });
+            buf(1674, C, 1); buf(1674, D, 1);
+
+            [[650, 770, 'HÔPITAL'], [890, 1010, 'VILLE']].forEach(([a, b, n]) => {
+                txt((a + b) / 2, 58, n, 'nm', { 'text-anchor': 'middle' });
+                [a - 8, b + 8].forEach(x => planEl(back, 'path', { d: `M${x},64V166`, stroke: '#33333a', 'stroke-dasharray': '3 4', fill: 'none' }));
+            });
+        }
+
+        // Géométrie d'une gare sur le plan, dans le sens des x croissants.
+        // left / right : points d'entrée côté gauche / de sortie côté droit ; yLE / yRE : ordonnée à ces extrémités.
+        function planGare(gare, voie, sillon, dir) {
+            const lettre = planLettre(voie);
+            if (sillon.ligne === 'pavillon') {
+                const g = PLAN_L2[gare]; if (!g) return null;
+                let y = PLAN_C;
+                if (gare === 'ZC') y = dir === 1 ? PLAN_C : PLAN_D;
+                else y = (lettre === 'D' || lettre === 'B') ? PLAN_D : PLAN_C;
+                const left = g.in != null ? [[g.in, PLAN_M], [g.x1, y]] : [[g.x1, y]];
+                const right = g.out != null ? [[g.x2, y], [g.out, PLAN_M]] : [[g.x2, y]];
+                return { dwell: [(g.x1 + g.x2) / 2, y], left, right, yLE: g.in != null ? PLAN_M : y, yRE: g.out != null ? PLAN_M : y };
+            }
+            if (gare === 'Fontaine') {
+                const l = planLettre(sillon.voieFontaine || 'A');
+                const y = PLAN_FONT_Y[l] != null ? PLAN_FONT_Y[l] : PLAN_FONT_Y.A;
+                const lane = ['S2', 'D', 'C', 'A'].includes(l) || PLAN_FONT_Y[l] == null ? PLAN_U : PLAN_L;
+                return { dwell: [145, y], left: [], right: [[240, y], [300, lane]], yLE: y, yRE: lane };
+            }
+            if (PLAN_WP[gare] != null) {
+                const y = planLettre(sillon.voieVille || 'A') === 'B' ? PLAN_L : PLAN_U;
+                return { dwell: [PLAN_WP[gare], y], left: [], right: [], yLE: y, yRE: y };
+            }
+            const g = PLAN_L1[gare]; if (!g) return null;
+            const y = lettre === 'B' ? PLAN_L : PLAN_U;
+            return { dwell: [(g[0] + g[1]) / 2, y], left: [[g[0], y]], right: [[g[1], y]], yLE: y, yRE: y };
+        }
+
+        // Chemin du train (polyligne) + distance de chaque gare le long du chemin
+        function cheminSillon(sillon, tl) {
+            const ordre = ligneDe(sillon).ordre;
+            const dir = ordre.indexOf(sillon.terminus) > ordre.indexOf(sillon.origine) ? 1 : -1;
+            const info = {};
+            for (const p of tl) { info[p.gare] = planGare(p.gare, p.voie, sillon, dir); if (!info[p.gare]) return null; }
+            const pts = [], dwellIdx = [];
+            for (let k = 0; k < tl.length; k++) {
+                pts.push(info[tl[k].gare].dwell); dwellIdx.push(pts.length - 1);
+                if (k < tl.length - 1) {
+                    const gl = dir === 1 ? tl[k].gare : tl[k + 1].gare, gr = dir === 1 ? tl[k + 1].gare : tl[k].gare;
+                    const A = info[gl], B = info[gr];
+                    let seg = [...A.right];
+                    if (A.yRE !== B.yLE && PLAN_CROIX[gl]) seg.push([PLAN_CROIX[gl][0], A.yRE], [PLAN_CROIX[gl][1], B.yLE]);
+                    seg = seg.concat(B.left);
+                    if (dir === -1) seg.reverse();
+                    pts.push(...seg);
+                }
+            }
+            const cum = [0];
+            for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+            return { pts, cum, dwell: dwellIdx.map(i => cum[i]) };
+        }
+
+        function planPointA(ch, d) {
+            const { pts, cum } = ch;
+            if (d <= 0) return pts[0];
+            for (let i = 1; i < pts.length; i++) {
+                if (d <= cum[i]) {
+                    const f = cum[i] === cum[i - 1] ? 0 : (d - cum[i - 1]) / (cum[i] - cum[i - 1]);
+                    return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f];
+                }
+            }
+            return pts[pts.length - 1];
+        }
+
+        // Position estimée à l'instant "now" (ms) ; null si le train n'est pas sur le plan
+        function positionSillon(sillon, now) {
+            const tl = timelineSillon(sillon);
+            if (!tl.length) return null;
+            const n = tl.length - 1;
+            if (now < tl[0].arr - PLAN_AVANT_MS || now > tl[n].arr + PLAN_APRES_MS) return null;
+            const ch = cheminSillon(sillon, tl);
+            if (!ch) return null;
+            let d, etat, gare = null, entre = null;
+            if (now < tl[0].arr) { d = ch.dwell[0]; etat = 'attente'; gare = 0; }
+            else {
+                d = ch.dwell[n]; etat = 'quai'; gare = n;
+                for (let i = 1; i <= n; i++) {
+                    if (now <= tl[i - 1].dep) { d = ch.dwell[i - 1]; etat = 'quai'; gare = i - 1; break; }
+                    if (now < tl[i].arr) {
+                        const f = (now - tl[i - 1].dep) / Math.max(1, tl[i].arr - tl[i - 1].dep);
+                        d = ch.dwell[i - 1] + (ch.dwell[i] - ch.dwell[i - 1]) * f;
+                        etat = 'route'; entre = [i - 1, i]; gare = null; break;
+                    }
+                    if (now <= tl[i].dep) { d = ch.dwell[i]; etat = 'quai'; gare = i; break; }
+                }
+            }
+            return { xy: planPointA(ch, d), etat, gare, entre, tl };
+        }
+
+        function renderPlan() {
+            const g = document.getElementById('plan-trains'); if (!g) return;
+            while (g.firstChild) g.removeChild(g.firstChild);
+            const now = Date.now(), lignes = [];
+            sillonsState.forEach(s => {
+                if (s.serviceSupprime || s.statut === 'Supprimé') return;
+                let r; try { r = positionSillon(s, now); } catch (e) { r = null; }
+                if (!r) return;
+                const [x, y] = r.xy, enService = s.statut === 'En Service';
+                planEl(g, 'circle', { cx: x, cy: y, r: 11, fill: '#ff9d00', opacity: 0.22 });
+                planEl(g, 'circle', { cx: x, cy: y, r: 6, fill: '#ff9d00', stroke: enService ? '#ffffff' : '#ffb43a', 'stroke-width': 1.5, filter: 'url(#plan-glow)' });
+                const t = planEl(g, 'text', { x, y: y >= 130 ? y - 11 : y + 19, 'text-anchor': 'middle', class: 'trainlbl' });
+                t.textContent = s.numero;
+                const tl = r.tl;
+                let etat;
+                if (r.etat === 'attente') etat = `En attente à ${libelleGare(tl[0].gare)}${tl[0].voie ? ' (' + tl[0].voie + ')' : ''} • départ ${fmtHMS(tl[0].arr)}`;
+                else if (r.etat === 'quai') etat = `À ${libelleGare(tl[r.gare].gare)}${tl[r.gare].voie ? ' (' + tl[r.gare].voie + ')' : ''}`;
+                else etat = `Entre ${libelleGare(tl[r.entre[0]].gare)} et ${libelleGare(tl[r.entre[1]].gare)}`;
+                const dec = Math.round((tl[tl.length - 1].arr - tl[tl.length - 1].theo) / 60000);
+                lignes.push({ t: tl[0].arr, html: `<div class="flex items-center justify-between gap-3 bg-snck-card border border-snck-border rounded-xl px-4 py-2 text-sm"><div><span class="font-mono font-bold text-orange-400">${escapeHtml(s.numero)}</span> <span class="text-gray-400 text-xs ml-2">${escapeHtml(libelleGare(s.origine))} ➔ ${escapeHtml(libelleGare(s.terminus))}</span></div><div class="text-xs text-gray-300">${escapeHtml(etat)}${dec ? ` <span class="${dec > 0 ? 'text-amber-400' : 'text-blue-400'} font-semibold ml-2">${dec > 0 ? '+' : ''}${dec} min</span>` : ''}</div></div>` });
+            });
+            lignes.sort((a, b) => a.t - b.t);
+            document.getElementById('plan-legende').innerHTML = lignes.length ? lignes.map(l => l.html).join('') : '<div class="text-center text-xs text-gray-500 py-4">Aucun train sur le réseau pour le moment (affichage de 10 min avant le départ jusqu\'à 2 min après l\'arrivée).</div>';
+            const c = document.getElementById('plan-clock'); if (c) c.innerText = new Date().toLocaleTimeString('fr-FR');
+        }
+
+        function openPlanModule(platform) {
+            planPlatform = platform || 'pc';
+            switchScreen('screen-plan');
+            initPlan(); renderPlan();
+        }
+        function retourMenuPlan() { switchScreen(planPlatform === 'tel' ? 'screen-tel-menu' : 'screen-pc-menu'); }
+        setInterval(() => { const s = document.getElementById('screen-plan'); if (s && !s.classList.contains('hidden')) renderPlan(); }, 1000);
+
         function calculerRetardAutomatique(index) {
             const s = sillonsState[index];
             if (!s || s.isStarted || serviceAtteintTerminus) return;
@@ -1576,6 +1924,13 @@ function calculerHorairesParcours() {
         }
 
         function mettreAJourAffichageRetard() {
+            mettreAJourAffichageRetardBase();
+            const sl = getActif(), el = document.getElementById('pc-cabine-retard');
+            const nb = sl && sl.retardsGares ? sl.retardsGares.length : 0;
+            if (el && nb) el.innerText += ` • ${nb} retard${nb > 1 ? 's' : ''} par gare`;
+        }
+
+        function mettreAJourAffichageRetardBase() {
             if (activeSillonIndex === null) return;
             const sillon = sillonsState[activeSillonIndex];
             let totalRetard = sillon.retard || 0;
@@ -1612,7 +1967,7 @@ function calculerHorairesParcours() {
                     btn.setAttribute('disabled', 'true');
                     btn.className = pc ? "btn-commencer-conduite px-4 py-2 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-sm font-semibold cursor-not-allowed"
                         : "btn-commencer-conduite py-3 px-2 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed";
-                    btn.innerHTML = `Départ à ${escapeHtml(sillon.depart)} (${escapeHtml(sillon.dateJJMM)})`;
+                    btn.innerHTML = `Départ à ${escapeHtml(sillon.depart)}:00 (${escapeHtml(sillon.dateJJMM)})`;
                 }
             });
         }
@@ -1649,19 +2004,62 @@ function calculerHorairesParcours() {
             setFinEtat(true);
         }
 
-        function openRetardModal() { document.getElementById('modal-retard').classList.remove('hidden'); }
+        function openRetardModal() {
+            const s = getActif();
+            const sel = document.getElementById('retard-gare');
+            sel.innerHTML = '<option value="">Tout le parcours (dès le départ)</option>';
+            if (s) timelineSillon(s).filter(p => p.served).forEach(p => {
+                const o = document.createElement('option');
+                o.value = p.gare; o.textContent = 'À partir de ' + libelleGare(p.gare);
+                sel.appendChild(o);
+            });
+            majChampsRetard();
+            document.getElementById('modal-retard').classList.remove('hidden');
+        }
         function closeRetardModal() { document.getElementById('modal-retard').classList.add('hidden'); }
+
+        function majChampsRetard() {
+            const parGare = !!document.getElementById('retard-gare').value;
+            document.getElementById('retard-secondes-wrap').classList.toggle('hidden', !parGare);
+            const s = getActif(), liste = document.getElementById('retards-gares-liste');
+            const e = (s && s.retardsGares) || [];
+            liste.innerHTML = e.length ? '<div class="text-[11px] text-gray-500 mb-1">Retards déclarés par gare</div>' + e.map((x, i) => {
+                return `<div class="flex items-center justify-between text-xs bg-snck-dark border border-snck-border rounded-lg px-3 py-1.5"><span class="text-gray-300">${escapeHtml(libelleGare(x.gare))} : <span class="${x.sec > 0 ? 'text-amber-400' : 'text-blue-400'} font-mono">${fmtDelai(x.sec)}</span></span><button type="button" onclick="retirerRetardGare(${i})" class="text-red-400 hover:text-red-300 cursor-pointer"><i class="fa-solid fa-xmark"></i></button></div>`;
+            }).join('') : '';
+        }
+
+        function retirerRetardGare(i) {
+            const s = getActif(); if (!s || !s.retardsGares) return;
+            s.retardsGares.splice(i, 1);
+            if (!s.retardsGares.length) delete s.retardsGares;
+            sauvegarderStorage(true);
+            calculerHorairesParcours(); mettreAJourAffichageRetard(); majChampsRetard();
+        }
 
         function handleSignalerRetardAvance(e) {
             e.preventDefault();
             const s = getActif(); if (!s) return;
             const mins = parseInt(document.getElementById('retard-minutes').value) || 0;
-            const ancien = s.retardManuel || 0;
-            if (s.retardAuto === undefined) s.retardAuto = Math.max(0, (s.retard || 0) - ancien);
-            s.motifRetard = document.getElementById('retard-motif').value;
-            s.retardManuel = document.getElementById('retard-type').value === 'avance' ? -mins : mins;
-            s.retard = s.retardAuto + s.retardManuel;
-            sauvegarderStorage();
+            const gare = document.getElementById('retard-gare').value;
+            const type = document.getElementById('retard-type').value;
+            const motif = document.getElementById('retard-motif').value;
+
+            if (gare) {
+                // Retard / avance à partir d'une gare : ne décale que cette gare et les suivantes
+                const secs = Math.max(0, Math.min(59, parseInt(document.getElementById('retard-secondes').value) || 0));
+                const total = mins * 60 + secs;
+                if (total <= 0) return;
+                s.retardsGares = (s.retardsGares || []).filter(x => x.gare !== gare);
+                s.retardsGares.push({ gare, sec: type === 'avance' ? -total : total, motif, ts: Date.now() });
+            } else {
+                if (mins <= 0) return;
+                const ancien = s.retardManuel || 0;
+                if (s.retardAuto === undefined) s.retardAuto = Math.max(0, (s.retard || 0) - ancien);
+                s.motifRetard = motif; s.motifRetardTs = Date.now();
+                s.retardManuel = type === 'avance' ? -mins : mins;
+                s.retard = s.retardAuto + s.retardManuel;
+            }
+            sauvegarderStorage(true);
             closeRetardModal();
             e.target.reset();
             mettreAJourAffichageRetard();
@@ -1737,6 +2135,7 @@ function calculerHorairesParcours() {
                 id: uuid(),
                 nom, type, heureFin, ligne,
                 dateCreation: new Date().toLocaleString('fr-FR'),
+                ts: Date.now(),
                 actif: true
             };
 
@@ -1878,7 +2277,7 @@ function calculerHorairesParcours() {
         // Les services supprimés disparaissent une fois l'heure d'arrivée passée
         function purgerSillonsSupprimes() {
             const now = Date.now(), act = getActif();
-            const keep = sillonsState.filter(s => !(s.serviceSupprime && now > departTs(s) + ((s.retard || 0) * 60 + dureeSec(s)) * 1000));
+            const keep = sillonsState.filter(s => !(s.serviceSupprime && now > finTs(s)));
             if (keep.length === sillonsState.length) return;
             sillonsState = keep;
             activeSillonIndex = act ? sillonsState.indexOf(act) : null;

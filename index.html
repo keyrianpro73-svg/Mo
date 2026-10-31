@@ -557,9 +557,10 @@
                     </div>
                     <div class="bg-snck-dark border border-snck-border rounded-xl p-4 text-right">
                         <div id="pc-cabine-horaires" class="text-lg font-bold font-mono">00:00 ➔ 00:00</div>
-                        <div id="pc-cabine-retard" class="text-xs font-semibold text-emerald-400 mt-1">+0 min (À l'heure)</div>
+                        <div id="pc-cabine-retard" class="text-xs font-semibold text-emerald-400 mt-1 max-w-xs">+0 min (À l'heure)</div>
                     </div>
                 </div>
+                <div id="pc-cabine-perturbations" class="space-y-2"></div>
                 <div class="bg-snck-card border border-snck-border rounded-2xl p-6">
                     <div id="pc-cabine-parcours-list" class="relative pl-6 space-y-6 border-l-2 border-emerald-500/40 ml-4"></div>
                 </div>
@@ -576,10 +577,12 @@
                     <h2 id="tel-cabine-titre" class="font-extrabold text-xl leading-tight">Train TER</h2>
                     <p id="tel-cabine-sous-titre" class="text-xs text-gray-300 font-medium mt-0.5">Destination</p>
                     <p id="tel-cabine-date-comp" class="text-[11px] text-indigo-300 font-semibold">JJ/MM • 4 wagons</p>
+                    <p id="tel-cabine-retard" class="text-[11px] font-semibold mt-0.5"></p>
                 </div>
             </header>
 
             <div class="flex-1 px-4 pt-6 pb-56 max-w-md mx-auto w-full overflow-y-auto">
+                <div id="tel-cabine-perturbations" class="space-y-2 mb-5"></div>
                 <div id="tel-cabine-parcours-list" class="space-y-6"></div>
             </div>
 
@@ -631,27 +634,43 @@
 
     <!-- MODALE RETARD -->
     <div id="modal-retard" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-snck-card border border-snck-border max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-6">
+        <div class="bg-snck-card border border-snck-border max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             <h3 class="text-xl font-bold text-amber-400 flex items-center gap-2"><i class="fa-solid fa-clock"></i> Signaler Avance ou Retard</h3>
             <form onsubmit="handleSignalerRetardAvance(event)" class="space-y-4">
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">Type</label>
-                    <select id="retard-type" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
-                        <option value="retard">Retard (+)</option>
-                        <option value="avance">Avance (-)</option>
+                    <label class="block text-sm text-gray-400 mb-1">Mode</label>
+                    <select id="retard-mode" onchange="changerModeRetard()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                        <option value="global">Même écart sur tout le trajet</option>
+                        <option value="gares">Écart différent selon la gare</option>
                     </select>
                 </div>
+                <div id="retard-bloc-global" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Type</label>
+                        <select id="retard-type" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                            <option value="retard">Retard (+)</option>
+                            <option value="avance">Avance (-)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Minutes</label>
+                        <input type="number" id="retard-minutes" min="1" value="5" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                    </div>
+                </div>
+                <div id="retard-bloc-gares" class="hidden space-y-2">
+                    <p class="text-xs text-gray-400">Écart en minutes à chaque gare desservie : <b>+3</b> = retard, <b>-7</b> = avance, <b>0</b> = à l'heure. Une gare laissée vide garde l'écart de la gare précédente (ex : Fontaine +0, Mairie -7, Ville +3).</p>
+                    <div id="retard-gares-liste" class="space-y-2"></div>
+                </div>
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">Motif</label>
+                    <label id="retard-motif-label" class="block text-sm text-gray-400 mb-1">Motif</label>
                     <input type="text" id="retard-motif" required placeholder="ex: Incident, régulation..." class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
                 </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">Minutes</label>
-                    <input type="number" id="retard-minutes" required min="1" value="5" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
-                </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeRetardModal()" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300">Annuler</button>
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold">Appliquer</button>
+                <div class="flex justify-between gap-3 pt-2">
+                    <button type="button" onclick="effacerRetardsManuels()" class="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm hover:bg-red-500/20">Effacer</button>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeRetardModal()" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300">Annuler</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold">Appliquer</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1459,6 +1478,88 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             return (ligneOrdre.indexOf(sillon.terminus) > ligneOrdre.indexOf(sillon.origine)) ? 'Voie A' : 'Voie B';
         }
 
+// ====== Retards par gare + perturbations en cabine ======
+// s.retardsGares = { "Mairie": { min: -7, motif: "..." }, ... } : écart (en min) valable à partir de cette gare
+// jusqu'à la prochaine gare renseignée. Sans retardsGares, l'ancien système (retardAuto + retardManuel) s'applique.
+function routeDe(s) {
+    const o = ligneDe(s).ordre, a = o.indexOf(s.origine), b = o.indexOf(s.terminus);
+    if (a < 0 || b < 0) return [];
+    return b >= a ? o.slice(a, b + 1) : o.slice(b, a + 1).reverse();
+}
+function garesDesservies(s) {
+    const r = routeDe(s);
+    return r.filter((g, i) => i === 0 || i === r.length - 1 || (s.arretsInter || []).includes(g));
+}
+function aRetardsGares(s) { return !!(s && s.retardsGares && Object.keys(s.retardsGares).length); }
+function retardAutoDe(s) {
+    return s.retardAuto !== undefined ? s.retardAuto : Math.max(0, (s.retard || 0) - (s.retardManuel || 0));
+}
+function retardA(s, gare) {
+    if (!aRetardsGares(s)) return retardAutoDe(s) + (Number(s.retardManuel) || 0);
+    let cur = retardAutoDe(s);
+    for (const g of routeDe(s)) {
+        const p = s.retardsGares[g];
+        if (p && Number.isFinite(Number(p.min))) cur = Number(p.min);
+        if (g === gare) break;
+    }
+    return cur;
+}
+function motifRetardA(s, gare) {
+    let cur = s.motifRetard || '';
+    if (aRetardsGares(s)) {
+        for (const g of routeDe(s)) {
+            const p = s.retardsGares[g];
+            if (p && Number.isFinite(Number(p.min))) cur = p.motif || s.motifRetard || '';
+            if (g === gare) break;
+        }
+    }
+    return retardA(s, gare) !== 0 ? cur : '';
+}
+const fmtEcart = n => (n > 0 ? '+' : '') + n + ' min';
+
+const SECTIONS_PERTURBATION = {
+    'Section Fontaine - Mairie': ['Fontaine', 'Mairie'],
+    'Section Mairie - Hôpital': ['Mairie', 'Hôpital'],
+    'Section Hôpital - Ville': ['Hôpital', 'Ville']
+};
+function perturbationConcerne(p, s) {
+    const sec = SECTIONS_PERTURBATION[p.ligne];
+    if (!sec) return true; // « Toute la ligne »
+    const route = routeDe(s);
+    if (s.ligne === 'pavillon') return route.includes(sec[0]) && route.includes(sec[1]);
+    const o = LIGNES.fontaine.ordre, idx = route.map(g => o.indexOf(g)).filter(i => i >= 0);
+    if (!idx.length) return false;
+    return Math.max(Math.min(...idx), o.indexOf(sec[0])) < Math.min(Math.max(...idx), o.indexOf(sec[1]));
+}
+function renderPerturbationsCab(sillon) {
+    ['pc-cabine-perturbations', 'tel-cabine-perturbations'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const liste = (perturbationsState || []).filter(p => p && p.actif !== false);
+        if (!sillon || liste.length === 0) {
+            el.innerHTML = '<div class="text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2"><i class="fa-solid fa-circle-check mr-1"></i> Aucune perturbation signalée sur le réseau.</div>';
+            return;
+        }
+        const items = liste.map(p => ({ p, concerne: perturbationConcerne(p, sillon) }))
+            .sort((a, b) => (b.concerne - a.concerne) || ((b.p.type === 'Interruption') - (a.p.type === 'Interruption')));
+        el.innerHTML = '<div class="text-xs font-bold text-gray-300 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation text-red-400 mr-1"></i> Perturbations (' + items.length + ')</div>' +
+            items.map(({ p, concerne }) => {
+                const c = p.type === 'Interruption' ? 'red' : 'amber';
+                return `<div class="rounded-xl border border-${c}-500/${concerne ? '40' : '15'} bg-${c}-500/${concerne ? '10' : '5'} px-3 py-2 ${concerne ? '' : 'opacity-60'}">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] bg-${c}-500/20 text-${c}-400 border border-${c}-500/30 font-bold uppercase">${escapeHtml(p.type || 'Perturbation')}</span>
+                        <span class="font-bold text-sm text-white">${escapeHtml(p.nom || '')}</span>
+                    </div>
+                    <div class="text-[11px] text-gray-400 mt-1">
+                        <i class="fa-solid fa-route mr-1"></i>${escapeHtml(p.ligne || 'Toute la ligne')}
+                        ${p.heureFin ? ' | <i class="fa-solid fa-clock mr-1"></i>Fin prévue : ' + escapeHtml(p.heureFin) : ''}
+                        ${concerne ? ' | <b class="text-' + c + '-400">Concerne votre parcours</b>' : ' | Hors de votre parcours'}
+                    </div>
+                </div>`;
+            }).join('');
+    });
+}
+
 function calculerHorairesParcours() {
     if (activeSillonIndex === null) return [];
     const sillon = sillonsState[activeSillonIndex];
@@ -1512,7 +1613,7 @@ function calculerHorairesParcours() {
         }
         
         let totalSecTheo = (totalMin * 60) + secTheoriques;
-        let totalSecReel = (totalMin * 60) + secReelles + decalageSec;
+        let totalSecReel = (totalMin * 60) + secReelles + retardA(sillon, gare) * 60;
 
         // Format HH:MM (sans secondes)
         horairesTheoriques.push(`${String(Math.floor(totalSecTheo/3600)%24).padStart(2,'0')}:${String(Math.floor((totalSecTheo%3600)/60)).padStart(2,'0')}`);
@@ -1520,11 +1621,11 @@ function calculerHorairesParcours() {
     });
 
     heureArriveeFinaleReelle = horairesReels[horairesReels.length - 1];
-    heureArriveeFinaleTs = departTs(sillon) + (secReelles + decalageSec) * 1000;
+    heureArriveeFinaleTs = departTs(sillon) + (secReelles + retardA(sillon, sillon.terminus) * 60) * 1000;
     
     if (currentPlatform !== 'tel') {
         let [hD, mD] = sillon.depart.split(':').map(Number);
-        let depSec = (hD * 60 + mD) * 60 + (sillon.retard || 0) * 60;
+        let depSec = (hD * 60 + mD) * 60 + retardA(sillon, sillon.origine) * 60;
         let depReel = `${String(Math.floor(depSec/3600)%24).padStart(2,'0')}:${String(Math.floor((depSec%3600)/60)).padStart(2,'0')}`;
         document.getElementById('pc-cabine-horaires').innerText = `${depReel} ➔ ${heureArriveeFinaleReelle}`;
     }
@@ -1542,13 +1643,16 @@ function calculerHorairesParcours() {
         let timeTheo = horairesTheoriques[idx];
         let timeReel = horairesReels[idx];
         let isDecale = (timeReel !== timeTheo);
+        const retG = retardA(sillon, gare), motifG = motifRetardA(sillon, gare);
+        const tagRetard = retG !== 0
+            ? `<div class="text-[11px] font-semibold ${retG > 0 ? 'text-amber-400' : 'text-blue-400'} mt-1">${retG > 0 ? 'Retard' : 'Avance'} ${fmtEcart(retG)}${motifG ? ' · ' + escapeHtml(motifG) : ''}</div>` : '';
 
         if (currentPlatform === 'tel') {
             container.innerHTML += `
                 <div class="grid grid-cols-[55px_24px_1fr] items-start gap-2 relative">
                     <div class="bg-indigo-500/20 text-indigo-300 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded text-center border border-indigo-400/30">${timeReel}</div>
                     <div class="flex flex-col items-center h-full relative"><div class="w-3.5 h-3.5 rounded-full bg-[#0B0E17] border-2 border-indigo-400 z-10 my-0.5"></div><div class="w-0.5 bg-indigo-500/40 flex-1 my-1"></div></div>
-                    <div class="pb-3"><h4 class="font-extrabold text-base text-white">${escapeHtml(gare)}</h4>${voie ? `<div class="text-xs text-indigo-300">${escapeHtml(voie)}</div>`:''}${arretTxt ? `<div class="text-[11px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded inline-block mt-1 border border-amber-500/20">${escapeHtml(arretTxt)}</div>`:''}</div>
+                    <div class="pb-3"><h4 class="font-extrabold text-base text-white">${escapeHtml(gare)}</h4>${voie ? `<div class="text-xs text-indigo-300">${escapeHtml(voie)}</div>`:''}${arretTxt ? `<div class="text-[11px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded inline-block mt-1 border border-amber-500/20">${escapeHtml(arretTxt)}</div>`:''}${tagRetard}</div>
                 </div>`;
         } else {
             let affichageHoraire = isDecale 
@@ -1561,20 +1665,24 @@ function calculerHorairesParcours() {
                     <div>
                         <span class="font-bold text-base">${escapeHtml(gare)}</span>
                         <div class="text-xs text-gray-400">${escapeHtml(voie)} ${arretTxt ? `<span class="text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 ml-2">${escapeHtml(arretTxt)}</span>` : ''}</div>
+                        ${tagRetard}
                     </div>
                     <div class="text-right font-mono text-sm">${affichageHoraire}</div>
                 </div>`;
         }
     });
+    renderPerturbationsCab(sillon);
     return horairesReels;
 }
         function calculerRetardAutomatique(index) {
             const s = sillonsState[index];
             if (!s || s.isStarted || serviceAtteintTerminus) return;
             const auto = Math.max(0, Math.floor((Date.now() - departTs(s)) / 60000));
-            const r = auto + (s.retardManuel || 0);
-            if (r === s.retard && auto === s.retardAuto) return;
-            s.retardAuto = auto; s.retard = r;
+            const ancienAuto = s.retardAuto;
+            s.retardAuto = auto;
+            const r = retardA(s, s.origine);
+            if (r === s.retard && auto === ancienAuto) return;
+            s.retard = r;
             sauvegarderStorage();
             if (index === activeSillonIndex) { calculerHorairesParcours(); mettreAJourAffichageRetard(); }
         }
@@ -1582,20 +1690,21 @@ function calculerHorairesParcours() {
         function mettreAJourAffichageRetard() {
             if (activeSillonIndex === null) return;
             const sillon = sillonsState[activeSillonIndex];
-            let totalRetard = sillon.retard || 0;
-            const pcRetard = document.getElementById('pc-cabine-retard');
-            if (pcRetard) {
-                if (totalRetard > 0) {
-                    pcRetard.className = "text-xs font-semibold text-amber-400 mt-1";
-                    pcRetard.innerText = `+${totalRetard} min (Retard)`;
-                } else if (totalRetard < 0) {
-                    pcRetard.className = "text-xs font-semibold text-blue-400 mt-1";
-                    pcRetard.innerText = `${totalRetard} min (Avance)`;
-                } else {
-                    pcRetard.className = "text-xs font-semibold text-emerald-400 mt-1";
-                    pcRetard.innerText = "+0 min (À l'heure)";
-                }
+            let txt, cls;
+            if (aRetardsGares(sillon)) {
+                txt = garesDesservies(sillon).map(g => `${g} ${retardA(sillon, g) > 0 ? '+' : ''}${retardA(sillon, g)}`).join(' · ');
+                const fin = retardA(sillon, sillon.terminus);
+                cls = fin > 0 ? 'amber' : fin < 0 ? 'blue' : 'emerald';
+            } else {
+                const totalRetard = sillon.retard || 0;
+                if (totalRetard > 0) { cls = 'amber'; txt = `+${totalRetard} min (Retard)`; }
+                else if (totalRetard < 0) { cls = 'blue'; txt = `${totalRetard} min (Avance)`; }
+                else { cls = 'emerald'; txt = "+0 min (À l'heure)"; }
             }
+            const pcRetard = document.getElementById('pc-cabine-retard');
+            if (pcRetard) { pcRetard.className = `text-xs font-semibold text-${cls}-400 mt-1 max-w-xs`; pcRetard.innerText = txt; }
+            const telRetard = document.getElementById('tel-cabine-retard');
+            if (telRetard) { telRetard.className = `text-[11px] font-semibold text-${cls}-400 mt-0.5`; telRetard.innerText = txt; }
         }
 
         function verifierHeureDepartAtteinte() {
@@ -1653,21 +1762,71 @@ function calculerHorairesParcours() {
             setFinEtat(true);
         }
 
-        function openRetardModal() { document.getElementById('modal-retard').classList.remove('hidden'); }
+        function openRetardModal() {
+            const s = getActif(); if (!s) return;
+            const man = Number(s.retardManuel) || 0;
+            document.getElementById('retard-mode').value = aRetardsGares(s) ? 'gares' : 'global';
+            document.getElementById('retard-type').value = man < 0 ? 'avance' : 'retard';
+            document.getElementById('retard-minutes').value = man ? Math.abs(man) : 5;
+            document.getElementById('retard-motif').value = s.motifRetard || '';
+            document.getElementById('retard-gares-liste').innerHTML = garesDesservies(s).map(g => {
+                const p = (s.retardsGares || {})[g] || {};
+                const v = Number.isFinite(Number(p.min)) && p.min !== undefined && p.min !== null ? p.min : '';
+                return `<div class="retard-gare-row grid grid-cols-[1fr_88px] gap-2 items-center bg-snck-dark border border-snck-border rounded-xl p-2" data-gare="${escapeHtml(g)}">
+                    <span class="text-sm font-semibold px-1">${escapeHtml(g)}</span>
+                    <input type="number" step="1" class="retard-gare-min bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-sm text-white text-center" placeholder="=" value="${v}">
+                    <input type="text" class="retard-gare-motif col-span-2 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white" placeholder="Motif pour cette gare (optionnel)" value="${escapeHtml(p.motif || '')}">
+                </div>`;
+            }).join('');
+            changerModeRetard();
+            document.getElementById('modal-retard').classList.remove('hidden');
+        }
+        function changerModeRetard() {
+            const gares = document.getElementById('retard-mode').value === 'gares';
+            document.getElementById('retard-bloc-global').classList.toggle('hidden', gares);
+            document.getElementById('retard-bloc-gares').classList.toggle('hidden', !gares);
+            document.getElementById('retard-minutes').required = !gares;
+            document.getElementById('retard-motif').required = !gares;
+            document.getElementById('retard-motif-label').innerText = gares ? 'Motif général (optionnel si renseigné par gare)' : 'Motif';
+        }
         function closeRetardModal() { document.getElementById('modal-retard').classList.add('hidden'); }
 
         function handleSignalerRetardAvance(e) {
             e.preventDefault();
             const s = getActif(); if (!s) return;
-            const mins = parseInt(document.getElementById('retard-minutes').value) || 0;
             const ancien = s.retardManuel || 0;
             if (s.retardAuto === undefined) s.retardAuto = Math.max(0, (s.retard || 0) - ancien);
-            s.motifRetard = document.getElementById('retard-motif').value;
-            s.retardManuel = document.getElementById('retard-type').value === 'avance' ? -mins : mins;
-            s.retard = s.retardAuto + s.retardManuel;
-            sauvegarderStorage();
+            s.motifRetard = document.getElementById('retard-motif').value.trim();
+            if (document.getElementById('retard-mode').value === 'gares') {
+                const p = {};
+                document.querySelectorAll('.retard-gare-row').forEach(row => {
+                    const v = row.querySelector('.retard-gare-min').value.trim();
+                    if (v === '' || !Number.isFinite(parseInt(v, 10))) return;
+                    p[row.dataset.gare] = { min: parseInt(v, 10), motif: row.querySelector('.retard-gare-motif').value.trim() };
+                });
+                if (!Object.keys(p).length) { alert('Renseigne un écart pour au moins une gare.'); return; }
+                s.retardsGares = p;
+                s.retardManuel = 0;
+            } else {
+                const mins = parseInt(document.getElementById('retard-minutes').value) || 0;
+                delete s.retardsGares;
+                s.retardManuel = document.getElementById('retard-type').value === 'avance' ? -mins : mins;
+            }
+            s.retard = retardA(s, s.origine);
+            sauvegarderStorage(true);
             closeRetardModal();
-            e.target.reset();
+            mettreAJourAffichageRetard();
+            calculerHorairesParcours();
+        }
+
+        function effacerRetardsManuels() {
+            const s = getActif(); if (!s) return;
+            if (!confirm('Effacer les retards / avances saisis pour ce train ?')) return;
+            if (s.retardAuto === undefined) s.retardAuto = Math.max(0, (s.retard || 0) - (s.retardManuel || 0));
+            delete s.retardsGares; s.retardManuel = 0; s.motifRetard = '';
+            s.retard = retardA(s, s.origine);
+            sauvegarderStorage(true);
+            closeRetardModal();
             mettreAJourAffichageRetard();
             calculerHorairesParcours();
         }
@@ -1882,7 +2041,7 @@ function calculerHorairesParcours() {
         // Les services supprimés disparaissent une fois l'heure d'arrivée passée
         function purgerSillonsSupprimes() {
             const now = Date.now(), act = getActif();
-            const keep = sillonsState.filter(s => !(s.serviceSupprime && now > departTs(s) + ((s.retard || 0) * 60 + dureeSec(s)) * 1000));
+            const keep = sillonsState.filter(s => !(s.serviceSupprime && now > departTs(s) + (retardA(s, s.terminus) * 60 + dureeSec(s)) * 1000));
             if (keep.length === sillonsState.length) return;
             sillonsState = keep;
             activeSillonIndex = act ? sillonsState.indexOf(act) : null;

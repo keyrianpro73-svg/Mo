@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNCK - SIRIUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        snck: {
+                            dark: '#0B0F19',
+                            card: '#111827',
+                            border: '#1F2937',
+                            primary: '#3B82F6',
+                            accent: '#10B981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-snck-dark text-gray-100 min-h-screen font-sans selection:bg-blue-500 selection:text-white">
+
+    <div id="app" class="min-h-screen flex flex-col">
+
+        <!-- 0. ÉCRAN DE CONNEXION / COMPTE -->
+        <div id="screen-auth" class="app-screen flex-1 flex items-center justify-center p-6">
+            <div class="max-w-md w-full bg-snck-card border border-snck-border rounded-3xl p-8 shadow-2xl space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
+                        <i class="fa-solid fa-train-subway"></i> SNCK — Système SIRIUS
+                    </div>
+                    <h1 class="text-2xl font-bold">Connexion Conducteur</h1>
+                    <p class="text-gray-400 text-xs">Veuillez vous identifier pour accéder au réseau</p>
+                </div>
+
+                <form onsubmit="handleAuth(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Identifiant / Nom de conducteur</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400"><i class="fa-solid fa-user"></i></span>
+                            <input type="text" id="auth-username" required placeholder="ex: Keke73" class="w-full bg-snck-dark border border-snck-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Mot de passe de service</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400"><i class="fa-solid fa-lock"></i></span>
+                            <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-snck-dark border border-snck-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/20 cursor-pointer">
+                        Se connecter au réseau <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </form>
+                <p class="text-[11px] text-gray-500 text-center">Premier lancement : le mot de passe saisi pour <b>Keke73</b> devient celui de l'administrateur.</p>
+                <div class="flex justify-center gap-4 text-[11px] text-gray-500">
+                    <button type="button" onclick="creerEspaceCloud()" class="hover:text-gray-300 cursor-pointer"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Activer la synchro en ligne</button>
+                    <button type="button" onclick="configurerCloud()" class="hover:text-gray-300 cursor-pointer"><i class="fa-solid fa-link mr-1"></i>Rejoindre un espace</button>
+                </div>
+                <p class="text-[11px] text-gray-600 text-center">Synchro : <span id="cloud-cfg-label">…</span></p>
+            </div>
+        </div>
+
+        <!-- 1. ÉCRAN DE SÉLECTION INITIAL -->
+        <div id="screen-selection" class="app-screen hidden flex-1 flex items-center justify-center p-6">
+            <div class="max-w-4xl w-full text-center space-y-8">
+                <div class="flex justify-between items-center bg-snck-card border border-snck-border px-6 py-3 rounded-2xl">
+                    <div class="text-left">
+                        <span class="text-xs text-gray-400">Connecté en tant que :</span>
+                        <div id="current-user-display" class="font-bold text-blue-400 text-sm">--</div>
+                    </div>
+                    <button onclick="deconnecterCompte()" class="px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs hover:bg-red-500/20 cursor-pointer">
+                        <i class="fa-solid fa-power-off mr-1"></i> Déconnexion
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
+                        <i class="fa-solid fa-train-subway"></i> SNCK — Système SIRIUS
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">Sélectionnez votre mode</h1>
+                    <p class="text-gray-400 max-w-lg mx-auto">Choisissez la version adaptée à votre poste de travail ou gérez vos accès.</p>
+                </div>
+
+                <div id="modes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <button id="btn-mode-tel" onclick="switchScreen('screen-tel-menu')" class="group relative bg-snck-card border border-snck-border hover:border-blue-500/50 p-8 rounded-2xl text-left transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 cursor-pointer">
+                        <div id="tel-lock-badge" class="hidden absolute inset-0 rounded-2xl bg-snck-dark/80 backdrop-blur-sm flex items-center justify-center z-10">
+                            <div class="text-center space-y-2">
+                                <i class="fa-solid fa-lock text-3xl text-gray-400"></i>
+                                <p class="text-xs text-gray-400 font-semibold">Disponible sur mobile uniquement</p>
+                            </div>
+                        </div>
+                        <div class="absolute top-6 right-6 w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-mobile-screen-button text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">Version Téléphone</h3>
+                        <p class="text-gray-400 text-sm mb-6">Interface mobile compacte dédiée à la conduite en mobilité.</p>
+                        <span class="inline-flex items-center gap-2 text-blue-400 font-semibold text-sm">
+                            Lancer sur mobile <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </span>
+                    </button>
+
+                    <button id="btn-mode-pc" onclick="switchScreen('screen-pc-menu')" class="group relative bg-snck-card border border-snck-border hover:border-emerald-500/50 p-8 rounded-2xl text-left transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-1 cursor-pointer">
+                        <div id="pc-lock-badge" class="hidden absolute inset-0 rounded-2xl bg-snck-dark/80 backdrop-blur-sm flex items-center justify-center z-10">
+                            <div class="text-center space-y-2">
+                                <i class="fa-solid fa-lock text-3xl text-gray-400"></i>
+                                <p class="text-xs text-gray-400 font-semibold">Disponible sur PC uniquement</p>
+                            </div>
+                        </div>
+                        <div class="absolute top-6 right-6 w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-desktop text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">Version PC</h3>
+                        <p class="text-gray-400 text-sm mb-6">Poste de commandement complet : création de sillons et régulation.</p>
+                        <span class="inline-flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                            Lancer sur PC <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1.5. MENU ADMIN EXCLUSIF (CRÉATION DE COMPTES) -->
+        <div id="screen-admin-comptes" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchScreen('screen-selection')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2 text-amber-400">
+                        <i class="fa-solid fa-user-shield"></i> Administration — Gestion des Comptes
+                    </h2>
+                </div>
+            </header>
+            <div class="flex-1 p-6 max-w-4xl mx-auto w-full space-y-6">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-blue-400">
+                        <i class="fa-solid fa-user-plus"></i> Créer un nouveau compte conducteur
+                    </h3>
+                    <form onsubmit="handleCreateAccount(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Identifiant</label>
+                            <input type="text" id="new-user-id" required placeholder="ex: Conducteur_02" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Mot de passe</label>
+                            <input type="password" minlength="6" id="new-user-pwd" required placeholder="ex: 123456" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-sm text-white">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer shadow">
+                                Enregistrer le compte
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 space-y-3">
+                    <h3 class="text-xl font-bold flex items-center gap-2 text-emerald-400">
+                        <i class="fa-solid fa-cloud"></i> Synchronisation Cloud
+                    </h3>
+                    <p class="text-xs text-gray-400">Les comptes et les sillons sont sauvegardés dans ton espace en ligne et accessibles depuis n'importe quel appareil.</p>
+                    <div class="flex items-center gap-3 bg-snck-dark border border-snck-border rounded-xl p-3">
+                        <code id="cloud-bucket-id" class="text-xs font-mono text-blue-400 flex-1 truncate">—</code>
+                        <button onclick="copyBucketId()" class="px-3 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 text-xs hover:bg-blue-600/30 cursor-pointer shrink-0">
+                            <i class="fa-solid fa-copy mr-1"></i> Copier
+                        </button>
+                    </div>
+                   <p class="text-[11px] text-gray-500">Les modifications sont synchronisées toutes les 5 secondes. Connectez-vous séparément sur chaque appareil.</p>
+                </div>
+
+                <div class="bg-snck-card border border-violet-500/30 rounded-2xl p-6 space-y-3">
+                    <h3 class="text-xl font-bold flex items-center gap-2 text-violet-400">
+                        <i class="fa-solid fa-plug"></i> API — SNCK Connect (lecture)
+                    </h3>
+                    <p class="text-xs text-gray-400">Les sillons du réseau sont lisibles à cette adresse (horaires, retards, statuts). Toute personne qui connaît cette adresse peut les lire.</p>
+                    <div class="flex items-center gap-3 bg-snck-dark border border-snck-border rounded-xl p-3">
+                        <code id="api-url-sillons" class="text-xs font-mono text-violet-400 flex-1 truncate">—</code>
+                        <button onclick="copyApiUrl()" class="px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-400 text-xs hover:bg-violet-600/30 cursor-pointer shrink-0">
+                            <i class="fa-solid fa-copy mr-1"></i> Copier
+                        </button>
+                    </div>
+                    <div class="bg-snck-dark border border-snck-border rounded-xl p-3">
+                        <p class="text-[11px] text-gray-500 mb-1">Exemple après connexion sur ce site :</p>
+                        <pre id="api-example" class="text-[11px] font-mono text-gray-300 overflow-x-auto whitespace-pre-wrap">—</pre>
+                    </div>
+                    <p class="text-[11px] text-gray-500">Les mots de passe ne sont jamais stockés en clair (hash PBKDF2 salé).</p>
+                </div>
+
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 space-y-4">
+                    <h3 class="text-xl font-bold">Comptes enregistrés sur le réseau</h3>
+                    <div id="liste-comptes-container" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MENU PRINCIPAL VERSION TÉLÉPHONE -->
+        <div id="screen-tel-menu" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchScreen('screen-selection')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-mobile-screen text-blue-500"></i> SNCK SIRIUS — Mobile
+                    </h2>
+                </div>
+                <div id="tel-clock" class="text-sm font-mono bg-snck-dark px-3 py-1.5 rounded-lg border border-snck-border text-gray-300">00:00:00</div>
+            </header>
+
+            <div class="flex-1 flex items-center justify-center p-6">
+                <div class="max-w-md w-full text-center space-y-6">
+                    <h2 class="text-2xl font-extrabold">Menu Téléphone</h2>
+                    <div class="space-y-4">
+                        <button onclick="openConduireModule('tel')" class="w-full p-6 rounded-2xl bg-snck-card border border-snck-border hover:border-emerald-500 text-left transition-all hover:-translate-y-1 group cursor-pointer flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-train"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Conduire</h3>
+                                <p class="text-gray-400 text-xs">Sélectionner un sillon pour lancer la cabine mobile.</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. MENU PRINCIPAL VERSION PC -->
+        <div id="screen-pc-menu" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchScreen('screen-selection')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-blue-500"></i> SNCK SIRIUS — PC
+                    </h2>
+                </div>
+                <div id="pc-clock" class="text-sm font-mono bg-snck-dark px-3 py-1.5 rounded-lg border border-snck-border text-gray-300">00:00:00</div>
+            </header>
+
+            <div class="flex-1 flex items-center justify-center p-6">
+                <div class="max-w-3xl w-full text-center space-y-8">
+                    <h2 class="text-3xl font-extrabold">Menu Principal PC</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button onclick="openHorairistePerturbations()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-blue-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Horairiste & Perturbations</h3>
+                            <p class="text-gray-400 text-sm">Gestion des horaires, sillons et signalement des perturbations réseau.</p>
+                        </button>
+
+                        <button onclick="openConduireModule('pc')" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-emerald-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-train"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Conduire</h3>
+                            <p class="text-gray-400 text-sm">Sélectionnez un sillon créé pour lancer la simulation de conduite PC.</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 3.5. MENU HORAIRISTE & PERTURBATIONS -->
+        <div id="screen-hp-menu" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchScreen('screen-pc-menu')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Menu PC
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-blue-500"></i> Horairiste & Perturbations
+                    </h2>
+                </div>
+            </header>
+            <div class="flex-1 flex items-center justify-center p-6">
+                <div class="max-w-3xl w-full text-center space-y-8">
+                    <h2 class="text-3xl font-extrabold">Gestion Réseau</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button onclick="openCreateSillonModule()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-blue-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-route"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Horairiste</h3>
+                            <p class="text-gray-400 text-sm">Créer et gérer les sillons : horaires, arrêts, voies, dates et composition.</p>
+                        </button>
+                        <button onclick="openPerturbationsModule()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-red-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Perturbations</h3>
+                            <p class="text-gray-400 text-sm">Signaler une interruption ou perturbation sur le réseau (visible sur SNCK Connect).</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3.6. MODULE PERTURBATIONS -->
+        <div id="screen-perturbations" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="openHorairistePerturbations()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2 text-red-400">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Signaler une Perturbation
+                    </h2>
+                </div>
+            </header>
+            <div class="flex-1 p-6 max-w-2xl mx-auto w-full">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 shadow-lg">
+                    <form onsubmit="handleSignalerPerturbation(event)" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Perturbation (type d'incident)</label>
+                            <input type="text" id="perturbation-nom" required placeholder="ex: Accident de personne, panne de signalisation..." class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Type</label>
+                                <select id="perturbation-type" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                                    <option value="Interruption">Interruption</option>
+                                    <option value="Perturbation">Perturbation</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Heure de Fin</label>
+                                <input type="time" id="perturbation-heure-fin" required class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Ligne concernée</label>
+                            <select id="perturbation-ligne" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                                <option value="Toute la ligne">Toute la ligne</option>
+                                <option value="Section Fontaine - Mairie">Section Fontaine - Mairie</option>
+                                <option value="Section Mairie - Hôpital">Section Mairie - Hôpital</option>
+                                <option value="Section Hôpital - Ville">Section Hôpital - Ville</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-2.5 rounded-xl cursor-pointer">
+                                <i class="fa-solid fa-bullhorn mr-2"></i> Publier la perturbation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div id="liste-perturbations" class="mt-6 space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- 4. MODULE : CRÉER DES SILLONS (PC) -->
+        <div id="screen-create-sillon" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="openHorairistePerturbations()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Horairiste & Perturbations
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-route text-blue-500"></i> Module : Horairiste (Créer des sillons)
+                    </h2>
+                </div>
+            </header>
+
+            <div class="flex-1 p-6 max-w-6xl mx-auto w-full space-y-8">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-blue-500"></i> Nouveau Sillon & Prévision (JJ/MM)
+                    </h3>
+                    
+                    <form id="form-sillon" onsubmit="handleCreateSillon(event)" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">N° Sillon</label>
+                                <input type="text" id="sillon-numero" required placeholder="ex: SK-102" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Date (JJ/MM)</label>
+                                <input type="date" id="sillon-date" required class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Heure de départ</label>
+                                <input type="time" id="sillon-depart-heure" required class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Composition</label>
+                                <input type="text" id="sillon-composition" required placeholder="ex: TER - 4 wagons" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                        </div>
+
+                        <div class="border-t border-snck-border pt-4 space-y-4">
+                            <label class="block text-sm font-medium text-gray-300">Itinéraire et Choix des Voies aux Terminus</label>
+
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Ligne</label>
+                                <select id="sillon-ligne" onchange="changerLigne()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                                    <option value="fontaine">Ligne Fontaine - Ville</option>
+                                    <option value="pavillon">Ligne Hôpital - Pavillon Noir (voie unique)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Origine</label>
+                                    <select id="sillon-origine" onchange="updateVoiesOptions()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                                        <option value="Fontaine">Fontaine</option><option value="Mairie">Mairie</option><option value="Technicentre">Technicentre</option><option value="Hôpital">Hôpital</option><option value="*Stockage">*Stockage</option><option value="*Dépot">*Dépot</option><option value="Ville">Ville</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Terminus</label>
+                                    <select id="sillon-terminus" onchange="updateVoiesOptions()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                                        <option value="Fontaine">Fontaine</option><option value="Mairie">Mairie</option><option value="Technicentre">Technicentre</option><option value="Hôpital">Hôpital</option><option value="*Stockage">*Stockage</option><option value="*Dépot">*Dépot</option><option value="Ville" selected>Ville</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-snck-dark/50 p-4 rounded-xl border border-snck-border">
+                                <div id="container-voie-fontaine">
+                                    <label class="block text-xs font-semibold text-blue-400 mb-1">Voie d'arrêt à Fontaine</label>
+                                    <select id="voie-fontaine" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                        <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option><option value="Voie C">Voie C</option><option value="Voie D">Voie D</option><option value="Voie E">Voie E</option><option value="Voie F">Voie F</option><option value="Voie S1">Voie S1</option><option value="Voie S2">Voie S2</option>
+                                    </select>
+                                </div>
+                                <div id="container-voie-ville">
+                                    <label class="block text-xs font-semibold text-emerald-400 mb-1">Voie d'arrêt à Ville</label>
+                                    <select id="voie-ville" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                        <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
+                                    </select>
+                                </div>
+                                <div id="container-voies-pavillon" class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4" style="display:none">
+                                    <div id="cv-pav-Hôpital">
+                                        <label class="block text-xs font-semibold text-blue-400 mb-1">Voie d'arrêt à Hôpital</label>
+                                        <select id="voie-pav-Hôpital" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie C">Voie C</option><option value="Voie D">Voie D</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Ville">
+                                        <label class="block text-xs font-semibold text-emerald-400 mb-1">Voie d'arrêt à Ville</label>
+                                        <select id="voie-pav-Ville" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie C">Voie C</option><option value="Voie D">Voie D</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Zoo">
+                                        <label class="block text-xs font-semibold text-amber-400 mb-1">Voie d'arrêt à Zoo</label>
+                                        <select id="voie-pav-Zoo" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Pavillon Noir">
+                                        <label class="block text-xs font-semibold text-indigo-400 mb-1">Voie d'arrêt à Pavillon Noir</label>
+                                        <select id="voie-pav-Pavillon Noir" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block text-xs text-gray-400 mb-2">Arrêts intermédiaires et temps d'arrêt (en minutes)</label>
+                                <div id="arrets-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="Mairie" class="rounded bg-snck-dark border-snck-border text-blue-500"> Mairie</label>
+                                        <input type="number" id="arret-duree-Mairie" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="Technicentre" class="rounded bg-snck-dark border-snck-border text-blue-500"> Technicentre</label>
+                                        <input type="number" id="arret-duree-Technicentre" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="Hôpital" class="rounded bg-snck-dark border-snck-border text-blue-500"> Hôpital</label>
+                                        <input type="number" id="arret-duree-Hôpital" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="*Stockage" class="rounded bg-snck-dark border-snck-border text-blue-500"> *Stockage</label>
+                                        <input type="number" id="arret-duree-*Stockage" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="*Dépot" class="rounded bg-snck-dark border-snck-border text-blue-500"> *Dépot</label>
+                                        <input type="number" id="arret-duree-*Dépot" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2.5 rounded-xl cursor-pointer">
+                                <i class="fa-solid fa-check mr-2"></i> Enregistrer le sillon
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold flex items-center justify-between">
+                        <span>Sillons prévus sur le réseau</span>
+                        <span id="sillons-count" class="text-xs font-mono bg-snck-card border border-snck-border px-3 py-1 rounded-full text-gray-400">0 sillon actif</span>
+                    </h3>
+                    <div id="liste-sillons" class="space-y-4">
+                        <div class="text-center py-12 bg-snck-card border border-snck-border rounded-2xl text-gray-400">Aucun sillon prévu.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. MODULE : SÉLECTION DU SILLON POUR CONDUIRE -->
+        <div id="screen-conduire" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <button onclick="retourMenuConduite()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-arrow-left"></i> Menu
+                </button>
+                <h2 class="font-bold text-lg text-emerald-400"><i class="fa-solid fa-train mr-2"></i> Sélection Sillon (Conduite)</h2>
+            </header>
+            <div class="flex-1 p-6 max-w-6xl mx-auto w-full space-y-6">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-2">Sillons programmés</h3>
+                    <div id="liste-sillons-conduite" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. CABINE PC -->
+        <div id="screen-cabine-pc" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <button id="pc-btn-retour" onclick="openConduireModule('pc')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-arrow-left"></i> Changer de Sillon
+                </button>
+                <div class="flex items-center gap-3">
+                    <button id="pc-btn-fin-service" onclick="ouvrirFicheFinService()" disabled class="px-4 py-2 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-sm font-semibold cursor-not-allowed">
+                        Finir le service (<span class="fin-service-timer">En attente</span>)
+                    </button>
+                    <button onclick="supprimerService()" class="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold hover:bg-red-500/20 cursor-pointer">
+                        <i class="fa-solid fa-trash"></i> Supprimer le Service
+                    </button>
+                    <button onclick="openRetardModal()" class="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold hover:bg-amber-500/20 cursor-pointer">
+                        <i class="fa-solid fa-clock"></i> Signaler retard / avance
+                    </button>
+                    <button id="btn-commencer-pc" onclick="toggleCommencerConduite()" disabled class="btn-commencer-conduite px-4 py-2 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-sm font-semibold cursor-not-allowed">
+                        Commencer le service (Attente heure départ)
+                    </button>
+                </div>
+            </header>
+            <div class="flex-1 p-6 max-w-5xl mx-auto w-full space-y-6">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 shadow-lg flex justify-between items-center">
+                    <div>
+                        <span id="pc-cabine-numero" class="text-xs font-mono px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">SK-000</span>
+                        <h3 id="pc-cabine-titre" class="text-2xl font-bold mt-1">Origine ➔ Terminus</h3>
+                        <p id="pc-cabine-date" class="text-xs text-indigo-400 mt-1 font-semibold">Date : JJ/MM</p>
+                    </div>
+                    <div class="bg-snck-dark border border-snck-border rounded-xl p-4 text-right">
+                        <div id="pc-cabine-horaires" class="text-lg font-bold font-mono">00:00 ➔ 00:00</div>
+                        <div id="pc-cabine-retard" class="text-xs font-semibold text-emerald-400 mt-1 max-w-xs">+0 min (À l'heure)</div>
+                    </div>
+                </div>
+                <div id="pc-cabine-perturbations" class="space-y-2"></div>
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6">
+                    <div id="pc-cabine-parcours-list" class="relative pl-6 space-y-6 border-l-2 border-emerald-500/40 ml-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. CABINE TÉLÉPHONE -->
+        <div id="screen-cabine-tel" class="app-screen hidden flex-1 flex flex-col bg-[#0B0E17] text-white">
+            <header class="px-5 pt-5 pb-3 flex items-center justify-between sticky top-0 bg-[#0B0E17]/95 backdrop-blur z-20 border-b border-gray-800/50">
+                <button id="tel-btn-retour" onclick="openConduireModule('tel')" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer shrink-0">
+                    <i class="fa-solid fa-arrow-left text-base"></i>
+                </button>
+                <div class="text-left flex-1 ml-4">
+                    <h2 id="tel-cabine-titre" class="font-extrabold text-xl leading-tight">Train TER</h2>
+                    <p id="tel-cabine-sous-titre" class="text-xs text-gray-300 font-medium mt-0.5">Destination</p>
+                    <p id="tel-cabine-date-comp" class="text-[11px] text-indigo-300 font-semibold">JJ/MM • 4 wagons</p>
+                    <p id="tel-cabine-retard" class="text-[11px] font-semibold mt-0.5"></p>
+                </div>
+            </header>
+
+            <div class="flex-1 px-4 pt-6 pb-56 max-w-md mx-auto w-full overflow-y-auto">
+                <div id="tel-cabine-perturbations" class="space-y-2 mb-5"></div>
+                <div id="tel-cabine-parcours-list" class="space-y-6"></div>
+            </div>
+
+            <div class="fixed bottom-0 left-0 right-0 bg-[#111625] border-t border-gray-800 p-3 shadow-2xl z-30 flex flex-col gap-2 max-w-md mx-auto">
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-commencer-tel" onclick="toggleCommencerConduite()" disabled class="btn-commencer-conduite py-3 px-2 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed">
+                        <i class="fa-solid fa-play"></i> Commencer
+                    </button>
+                    <button onclick="openRetardModal()" class="py-3 px-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-amber-500/20 cursor-pointer">
+                        <i class="fa-solid fa-clock"></i> Avance / Retard
+                    </button>
+                </div>
+                <button id="tel-btn-b3" onclick="ouvrirFicheFinService()" disabled class="w-full py-2.5 px-3 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed">
+                    <i class="fa-solid fa-flag-checkered"></i> Finir le service (<span class="fin-service-timer">En attente</span>)
+                </button>
+                <button onclick="supprimerService()" class="w-full py-2.5 px-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-red-500/20 cursor-pointer">
+                    <i class="fa-solid fa-trash"></i> Supprimer le Service
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="cloud-status-badge" class="fixed bottom-3 right-3 z-40 px-3 py-1.5 rounded-full text-[11px] font-semibold border backdrop-blur bg-gray-500/10 text-gray-400 border-gray-500/20"><i class="fa-solid fa-cloud mr-1"></i> Cloud…</div>
+
+    <!-- MODALE PRISE DE SERVICE -->
+    <div id="modal-prise-service" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-sm w-full rounded-2xl p-6 shadow-2xl text-center space-y-5">
+            <h3 class="text-xl font-bold">Prendre ce service ?</h3>
+            <p id="prise-service-details" class="text-xs text-gray-400 mt-1">Verrouillage exclusif du sillon.</p>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closePriseServiceModal()" class="flex-1 py-2.5 rounded-xl bg-snck-dark border border-snck-border text-xs text-gray-300">Annuler</button>
+                <button onclick="confirmerPriseService()" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">Je fais ce service</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE FICHE FIN -->
+    <div id="modal-fiche-fin" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-6">
+            <h3 class="text-xl font-bold">Fiche Bilan de Fin de Service</h3>
+            <div class="grid grid-cols-2 gap-4 bg-snck-dark p-4 rounded-xl border border-snck-border text-sm">
+                <div><span class="text-xs text-gray-400 block">N° Sillon</span><span id="fiche-numero" class="font-bold font-mono text-blue-400">SK-000</span></div>
+                <div><span class="text-xs text-gray-400 block">Parcours</span><span id="fiche-parcours" class="font-semibold">--</span></div>
+            </div>
+            <button onclick="validerEtQuitterService()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm cursor-pointer">Terminer et Supprimer le Sillon</button>
+        </div>
+    </div>
+
+    <!-- MODALE RETARD -->
+    <div id="modal-retard" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <h3 id="retard-modal-titre" class="text-xl font-bold text-amber-400 flex items-center gap-2"><i class="fa-solid fa-clock"></i> Avance / Retard / Arrêts</h3>
+            <form onsubmit="handleSignalerRetardAvance(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Mode</label>
+                    <select id="retard-mode" onchange="changerModeRetard()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                        <option value="global">Même écart sur tout le trajet</option>
+                        <option value="gares">Écart différent selon la gare</option>
+                        <option value="inchange">Ne pas modifier l'écart (arrêts seulement)</option>
+                    </select>
+                </div>
+                <div id="retard-bloc-global" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Type</label>
+                        <select id="retard-type" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                            <option value="retard">Retard (+)</option>
+                            <option value="avance">Avance (-)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Minutes</label>
+                        <input type="number" id="retard-minutes" min="1" value="5" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                    </div>
+                </div>
+                <div id="retard-bloc-gares" class="hidden space-y-2">
+                    <p class="text-xs text-gray-400">Écart en minutes à chaque gare desservie : <b>+3</b> = retard, <b>-7</b> = avance, <b>0</b> = à l'heure. Une gare laissée vide garde l'écart de la gare précédente (ex : Fontaine +0, Mairie -7, Ville +3).</p>
+                    <div id="retard-gares-liste" class="space-y-2"></div>
+                </div>
+                <div id="retard-bloc-motif">
+                    <label id="retard-motif-label" class="block text-sm text-gray-400 mb-1">Motif</label>
+                    <input type="text" id="retard-motif" required placeholder="ex: Incident, régulation..." class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                </div>
+                <div class="space-y-2 border-t border-snck-border pt-4">
+                    <label class="block text-sm text-gray-400"><i class="fa-solid fa-ban text-red-400 mr-1"></i> Arrêts supprimés</label>
+                    <p class="text-xs text-gray-400">Coche un arrêt pour le marquer « arrêt supprimé » : il reste affiché mais le train ne le dessert plus. Ex : Fontaine - Hôpital - Ville devient Hôpital - Ville (Fontaine reste barré). Fonctionne pour n'importe quel arrêt, y compris au milieu du parcours.</p>
+                    <div id="retard-arrets-liste" class="space-y-2"></div>
+                </div>
+                <div class="flex justify-between gap-3 pt-2">
+                    <button type="button" onclick="effacerRetardsManuels()" class="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm hover:bg-red-500/20">Effacer</button>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeRetardModal()" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300">Annuler</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold">Appliquer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Comptes (chargés depuis le serveur, réservé à l'administrateur)
+        let accountsState = [];
+        let currentUser = null;
+        let currentUserIsAdmin = false;
+        let sillonsState = JSON.parse(localStorage.getItem('snck_sillons')) || [];
+        let activeSillonIndex = null;
+        let pendingPriseIndex = null;
+        let heureArriveeFinaleReelle = null;
+        let heureArriveeFinaleTs = null;
+        let serviceAtteintTerminus = false;
+        let currentPlatform = 'pc';
+
+let cloudVersion = null;
+let cloudBase = { sillons: [], perturbations: [] };
+let cloudReady = false;
+let cloudBusy = false;
+let cloudDirty = false;
+let cloudTimer;
+const oldAccounts = JSON.parse(localStorage.getItem('snck_accounts') || '[]');
+localStorage.removeItem('snck_current_user');
+function setCloudStatus(state, message) {
+    const badge = document.getElementById('cloud-status-badge');
+    if (!badge) return;
+    const s = ({
+        online: [dbBase() ? 'Cloud synchronisé' : 'Mode local (cet appareil)', 'text-emerald-400 border-emerald-500/30'],
+        connecting: ['Synchronisation…', 'text-blue-400 border-blue-500/30'],
+        error: ['Non synchronisé — nouvelle tentative automatique', 'text-red-400 border-red-500/30'],
+        offline: ['Connexion requise', 'text-gray-400 border-gray-500/30']
+    })[state] || ['—', 'text-gray-400 border-gray-500/30'];
+    badge.innerHTML = '<i class="fa-solid fa-cloud mr-1"></i>' + s[0];
+    badge.title = message || '';
+    badge.className = 'fixed bottom-3 right-3 z-40 px-3 py-1.5 rounded-full text-[11px] font-semibold border backdrop-blur bg-snck-dark ' + s[1];
+}
+// ====== Stockage : espace en ligne (fonction Netlify + Netlify Blobs) ou mode local ======
+// Optionnel : colle ici le code de synchro (affiché dans l'écran admin) pour que tous les appareils l'utilisent d'office.
+const DB_ID = '';
+const BLOB = '/api/db';
+const ADMIN_NAME = 'Keke73';
+function dbBase() { return (localStorage.getItem('snck_db_id') || DB_ID).trim(); }
+(function () { // lien de partage : index.html#sync=CODE
+    const m = location.hash.match(/sync=([\w-]+)/);
+    if (m) { localStorage.setItem('snck_db_id', m[1]); history.replaceState(null, '', location.pathname + location.search); }
+})();
+const apiErr = (message, status) => { const e = new Error(message); e.status = status; return e; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const toHex = bytes => Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+const hexKey = s => toHex(new TextEncoder().encode(String(s).trim().toLowerCase()));
+
+async function blobFetch(method, body) {
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+        const r = await fetch(BLOB + '?id=' + encodeURIComponent(dbBase()), {
+            method, cache: 'no-store', signal: ctrl.signal,
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: body === undefined ? undefined : JSON.stringify(body)
+        });
+        if (r.status === 404) throw apiErr('Espace de synchronisation introuvable (code invalide ou supprimé).', 502);
+        if (!r.ok) throw apiErr('Erreur du service de synchronisation (' + r.status + ').', 502);
+        const data = await r.json().catch(() => null);
+        if (method === 'GET' && (data === null || typeof data !== 'object')) throw apiErr('Réponse inattendue du service de synchronisation.', 502);
+        return data;
+    } catch (e) {
+        if (e.status) throw e;
+        throw apiErr(e.name === 'AbortError' ? 'Le service de synchronisation ne répond pas (délai dépassé).' : 'Connexion au service de synchronisation impossible.', 0);
+    } finally { clearTimeout(timer); }
+}
+// Tout le stockage est un seul document JSON : lecture, modification, réécriture
+async function dbReq(method, path, value, shallow) {
+    if (!dbBase()) return localDb(method, path, value, shallow);
+    const root = await blobFetch('GET');
+    const res = treeOp(root, method, path, value, shallow);
+    if (method !== 'GET') await blobFetch('PUT', root);
+    return res;
+}
+function treeOp(root, method, path, value, shallow) {
+    const parts = path.split('/').filter(Boolean);
+    let node = root;
+    for (const p of parts.slice(0, -1)) {
+        if (typeof node[p] !== 'object' || node[p] === null) { if (method !== 'PUT') return null; node[p] = {}; }
+        node = node[p];
+    }
+    const last = parts[parts.length - 1];
+    if (method === 'GET') {
+        const v = node[last] === undefined ? null : node[last];
+        return shallow && v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).map(k => [k, true])) : v;
+    }
+    if (method === 'PUT') node[last] = value; else delete node[last];
+    return method === 'PUT' ? value : null;
+}
+function localDb(method, path, value, shallow) {
+    const root = JSON.parse(localStorage.getItem('snck_localdb') || '{}');
+    const res = treeOp(root, method, path, value, shallow);
+    if (method !== 'GET') localStorage.setItem('snck_localdb', JSON.stringify(root));
+    return res;
+}
+
+// ---- Comptes : seuls un sel et un hash PBKDF2 sont stockés, jamais le mot de passe ----
+async function hashPwd(pwd, salt) {
+    if (!crypto.subtle) throw apiErr('Le chiffrement du navigateur nécessite une page en HTTPS.', 500);
+    const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pwd), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations: 150000, hash: 'SHA-256' }, k, 256);
+    return toHex(new Uint8Array(bits));
+}
+async function creerCompte(name, pwd, admin) {
+    const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+    const acc = { id: name, salt, hash: await hashPwd(pwd, salt), admin: !!admin };
+    await dbReq('PUT', 'accounts/' + hexKey(name), acc);
+    return acc;
+}
+async function sessionUser() {
+    const name = localStorage.getItem('snck_session');
+    if (!name) return null;
+    const acc = await dbReq('GET', 'accounts/' + hexKey(name));
+    return acc ? { name: acc.id, admin: acc.admin === true } : null; // compte supprimé => session invalide
+}
+
+// ---- Routes (mêmes noms que l'ancienne API : le reste de la page ne change pas) ----
+async function api(path, method = 'GET', body) {
+    try { return await route(path, method, body || {}); }
+    catch (e) {
+        if (e.status === 401 && path !== 'login' && path !== 'session' && currentUser) sessionExpiree();
+        throw e;
+    }
+}
+async function route(path, method, body) {
+    if (path === 'login' && method === 'POST') {
+        const name = String(body.name || '').trim(), pwd = String(body.password || '');
+        if (!name) throw apiErr('Identifiant requis.', 400);
+        let acc = await dbReq('GET', 'accounts/' + hexKey(name));
+        if (!acc && name.toLowerCase() === ADMIN_NAME.toLowerCase() && !(await dbReq('GET', 'accounts', undefined, true))) {
+            if (pwd.length < 6) throw apiErr('Premier lancement : choisis un mot de passe de 6 caractères minimum.', 400);
+            acc = await creerCompte(ADMIN_NAME, pwd, true); // le tout premier mot de passe devient celui de l'admin
+        } else if (!acc || await hashPwd(pwd, acc.salt) !== acc.hash) {
+            await sleep(600);
+            throw apiErr('Identifiant ou mot de passe incorrect.', 401);
+        }
+        localStorage.setItem('snck_session', acc.id);
+        return { name: acc.id, admin: acc.admin === true };
+    }
+    if (path === 'logout') { localStorage.removeItem('snck_session'); return { ok: true }; }
+    const user = await sessionUser();
+    if (!user) throw apiErr('Session absente ou expirée.', 401);
+    if (path === 'session') return user;
+
+    if (path === 'state' && method === 'GET') {
+        const s = await dbReq('GET', 'state');
+        let data = s || {};
+        if (s && s.json) { try { data = JSON.parse(s.json); } catch {} }
+        return { sillons: data.sillons || [], perturbations: data.perturbations || [], version: s ? s.version : null, admin: user.admin };
+    }
+    if (path === 'state' && method === 'PUT') {
+        if (!Array.isArray(body.sillons) || !Array.isArray(body.perturbations)) throw apiErr('Données invalides.', 400);
+        const cur = await dbReq('GET', 'state');
+        if ((cur ? cur.version : null) !== (body.version ?? null)) throw apiErr('Conflit de version.', 409);
+        const version = (cur ? cur.version : 0) + 1;
+        const w = toHex(crypto.getRandomValues(new Uint8Array(6)));
+        await dbReq('PUT', 'state', { sillons: body.sillons, perturbations: body.perturbations, version, w });
+        const chk = await dbReq('GET', 'state'); // relecture : si un autre appareil a écrit en même temps, on signale un conflit
+        if (!chk || chk.w !== w) throw apiErr('Conflit de version.', 409);
+        return { version };
+    }
+    if (path === 'sillons' && method === 'GET') return (await route('state', 'GET', {})).sillons;
+
+    if (path === 'accounts') {
+        if (!user.admin) throw apiErr("Réservé à l'administrateur.", 403);
+        const all = (await dbReq('GET', 'accounts')) || {};
+        if (method === 'GET') return Object.values(all).map(a => ({ id: a.id, admin: a.admin === true })).sort((a, b) => (b.admin === true) - (a.admin === true));
+        const name = String(body.name || '').trim();
+        if (method === 'POST') {
+            const password = String(body.password || '');
+            if (!/^[\p{L}\p{N}_.\- ]{2,32}$/u.test(name)) throw apiErr('Identifiant invalide (2 à 32 caractères : lettres, chiffres, _ . -).', 400);
+            if (password.length < 6) throw apiErr('Mot de passe : 6 caractères minimum.', 400);
+            if (all[hexKey(name)]) throw apiErr('Cet identifiant existe déjà.', 409);
+            await creerCompte(name, password, false);
+            return { ok: true };
+        }
+        if (method === 'DELETE') {
+            const acc = all[hexKey(name)];
+            if (acc && acc.admin) throw apiErr("Le compte administrateur ne peut pas être supprimé.", 400);
+            await dbReq('DELETE', 'accounts/' + hexKey(name));
+            return { ok: true };
+        }
+    }
+    throw apiErr('Route introuvable (' + path + ').', 404);
+}
+
+// ---- Affichage de la base dans l'écran admin / connexion ----
+function urlApiSillons() { return dbBase() ? location.origin + BLOB + '?id=' + dbBase() : ''; }
+function lienSync() { return dbBase() ? location.href.split('#')[0] + '#sync=' + dbBase() : ''; }
+
+
+
+function configurerCloud() {
+    const v = prompt("Code ou lien de synchronisation à rejoindre (vide = mode local sur cet appareil) :", dbBase());
+    if (v === null) return;
+    const id = v.trim().replace(/^.*(sync=|\/)/, '');
+    if (!/^[\w-]*$/.test(id)) { alert('Code invalide.'); return; }
+    if (id) localStorage.setItem('snck_db_id', id); else localStorage.removeItem('snck_db_id');
+    updateBucketIdDisplay(); setCloudStatus('offline');
+}
+async function creerEspaceCloud() {
+    if (dbBase() && !confirm('Un espace est déjà configuré. En créer un nouveau ? (les autres appareils devront le rejoindre)')) return;
+    try {
+        const root = JSON.parse(localStorage.getItem('snck_localdb') || '{}'); // reprend les comptes et sillons de cet appareil
+        const id = uuid();
+        const r = await fetch(BLOB + '?id=' + encodeURIComponent(id), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(root) });
+        if (!r.ok) throw new Error('Le service a répondu ' + r.status + (r.status === 404 ? ' (la fonction /api/db n\u2019est pas déployée ?)' : ''));
+        localStorage.setItem('snck_db_id', id);
+        updateBucketIdDisplay(); setCloudStatus('offline');
+        prompt('Synchronisation activée. Ouvre ce lien sur tes autres appareils (copie-le, il est aussi dans l’écran admin) :', lienSync());
+    } catch (e) { alert('Création impossible : ' + (e.message || e)); }
+}
+// Session expirée ou compte supprimé : retour à l'écran de connexion.
+function sessionExpiree() {
+    viderCachesLocaux();
+    currentUser = null;
+    currentUserIsAdmin = false;
+    cloudReady = false;
+    cloudDirty = false;
+    accountsState = [];
+    activeSillonIndex = null;
+    setCloudStatus('offline');
+    document.querySelectorAll('.fixed.inset-0').forEach(m => m.classList.add('hidden'));
+    switchScreen('screen-auth');
+    alert('Ta session a expiré. Reconnecte-toi.');
+}
+// Reprend la session existante (cookie) au rechargement de la page.
+async function restaurerSession() {
+    try {
+        const session = await api('session');
+        currentUser = session.name;
+        currentUserIsAdmin = session.admin === true;
+    } catch { switchScreen('screen-auth'); return; }
+    try { await initializeCloud(); } catch (error) { setCloudStatus('error', error.message); }
+    verifierAccesEtAfficherSelection();
+}
+function updateBucketIdDisplay() {
+    document.getElementById('cloud-bucket-id').textContent = dbBase() || 'Mode local (aucun espace en ligne)';
+    document.getElementById('api-url-sillons').textContent = urlApiSillons() || 'Active la synchronisation en ligne pour obtenir l’adresse';
+    const ex = document.getElementById('api-example');
+    if (ex) ex.textContent = urlApiSillons() ? `fetch('${urlApiSillons()}')\n  .then(r => r.json())\n  .then(data => console.log(data.state.sillons));` : '—';
+    const l = document.getElementById('cloud-cfg-label');
+    if (l) l.textContent = dbBase() ? 'en ligne (' + dbBase().slice(0, 8) + '…)' : 'locale (cet appareil)';
+}
+function copyApiUrl() { if (urlApiSillons()) copierTexte(urlApiSillons()); }
+function copyBucketId() { if (lienSync()) copierTexte(lienSync()); }
+function snapshot() { return JSON.parse(JSON.stringify({ sillons: sillonsState, perturbations: perturbationsState })); }
+function mergeChanges(base, local, remote) {
+    const result = {};
+    for (const key of ['sillons', 'perturbations']) {
+        const before = new Map(base[key].map(x => [String(x.id), x]));
+        const after = new Map(local[key].map(x => [String(x.id), x]));
+        const merged = new Map(remote[key].map(x => [String(x.id), x]));
+        for (const id of before.keys()) if (!after.has(id)) merged.delete(id);
+        for (const [id, item] of after) {
+            if (!before.has(id)) merged.set(id, item);
+            else if (merged.has(id) && JSON.stringify(before.get(id)) !== JSON.stringify(item)) {
+                const next = { ...(merged.get(id) || item) };
+                for (const field of new Set([...Object.keys(before.get(id)), ...Object.keys(item)])) {
+                    if (JSON.stringify(before.get(id)[field]) !== JSON.stringify(item[field])) {
+                        if (field in item) next[field] = item[field]; else delete next[field];
+                    }
+                }
+                merged.set(id, next);
+            }
+        }
+        result[key] = [...merged.values()];
+    }
+    return result;
+}
+function applyState(data) {
+    // Keep the active cab attached to its train when another device adds/deletes a service.
+    const activeId = activeSillonIndex !== null ? sillonsState[activeSillonIndex]?.id : null;
+    const pendingId = pendingPriseIndex !== null ? sillonsState[pendingPriseIndex]?.id : null;
+    sillonsState = data.sillons || [];
+    perturbationsState = data.perturbations || [];
+    if (activeId !== null) {
+        const index = sillonsState.findIndex(x => x.id === activeId);
+        activeSillonIndex = index < 0 ? null : index;
+        if (index < 0) switchScreen('screen-conduire');
+    }
+    if (pendingId !== null) {
+        const index = sillonsState.findIndex(x => x.id === pendingId);
+        pendingPriseIndex = index < 0 ? null : index;
+        if (index < 0) closePriseServiceModal();
+    }
+    localStorage.setItem('snck_sillons', JSON.stringify(sillonsState));
+    localStorage.setItem('snck_perturbations', JSON.stringify(perturbationsState));
+    renderSillons(); renderSillonsConduite(); renderPerturbations();
+    const sa = getActif();
+    if (sa && sa.conducteur && sa.conducteur !== currentUser) {
+        activeSillonIndex = null;
+        document.getElementById('tel-btn-retour').style.display = 'flex';
+        document.getElementById('pc-btn-retour').style.display = 'flex';
+        switchScreen('screen-conduire');
+        alert('Ce service a été pris par ' + sa.conducteur + '.');
+    }
+    if (activeSillonIndex !== null) { calculerHorairesParcours(); mettreAJourAffichageRetard(); updateBoutonConduiteUI(); }
+}
+function cloudSave(immediate) {
+    cloudDirty = true;
+    setCloudStatus('connecting');
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(flushCloud, immediate ? 0 : 400);
+}
+async function flushCloud() {
+    if (!currentUser || !cloudReady || cloudBusy || !cloudDirty) return;
+    cloudBusy = true;
+    const sent = snapshot();
+    try {
+        const result = await api('state', 'PUT', { ...sent, version: cloudVersion });
+        cloudVersion = result.version;
+        cloudBase = sent;
+        cloudDirty = JSON.stringify(snapshot()) !== JSON.stringify(sent);
+        setCloudStatus(cloudDirty ? 'connecting' : 'online');
+    } catch (error) {
+        try {
+        if (error.status === 409) {
+            const remote = await api('state');
+            const merged = mergeChanges(cloudBase, snapshot(), remote);
+            cloudBase = { sillons: remote.sillons || [], perturbations: remote.perturbations || [] };
+            cloudVersion = remote.version;
+            applyState(merged);
+        } else setCloudStatus('error');
+        } catch { setCloudStatus('error'); }
+    } finally {
+        cloudBusy = false;
+        if (cloudDirty) cloudTimer = setTimeout(flushCloud, 2000);
+    }
+}
+async function cloudPull() {
+    if (!currentUser || cloudBusy) return;
+    if (!cloudReady) {
+        cloudBusy = true;
+        try { await initializeCloud(); }
+        catch (error) { setCloudStatus('error', error.message); }
+        finally { cloudBusy = false; }
+        return;
+    }
+    if (cloudDirty) return;
+    cloudBusy = true;
+    try {
+        const data = await api('state');
+        currentUserIsAdmin = data.admin === true;
+        if (cloudDirty) return;
+        if (data.version !== cloudVersion) {
+            cloudVersion = data.version;
+            cloudBase = { sillons: data.sillons || [], perturbations: data.perturbations || [] };
+            applyState(cloudBase);
+        }
+        if (data.admin) {
+            try { accountsState = await api('accounts'); renderComptesList(); }
+            catch (error) { document.getElementById('liste-comptes-container').title = error.message; }
+        }
+        setCloudStatus('online');
+    } catch { setCloudStatus('error'); }
+    finally { cloudBusy = false; }
+}
+async function initializeCloud() {
+    const data = await api('state');
+    currentUserIsAdmin = data.admin === true;
+    cloudVersion = data.version;
+    if (data.version === null && data.admin) {
+        cloudReady = true;
+        cloudDirty = true;
+        await flushCloud();
+    } else {
+        cloudBase = { sillons: data.sillons || [], perturbations: data.perturbations || [] };
+        applyState(cloudBase);
+        cloudReady = true;
+    }
+    if (data.admin) {
+        accountsState = await api('accounts');
+        let importFailed = false;
+        for (const account of oldAccounts) {
+            if (account.pwd && !accountsState.some(x => x.id.toLowerCase() === account.id.toLowerCase())) {
+                try {
+                    await api('accounts', 'POST', { name: account.id, password: account.pwd });
+                    accountsState.push({ id: account.id });
+                } catch { importFailed = true; }
+            }
+        }
+        if (!importFailed) { localStorage.removeItem('snck_accounts'); oldAccounts.length = 0; }
+        else alert('Certains anciens comptes n’ont pas pu être importés. Leurs données locales sont conservées. Recrée-les dans la gestion des comptes avec un mot de passe de 6 caractères minimum.');
+    }
+    setCloudStatus(cloudDirty ? 'error' : 'online');
+}
+window.addEventListener('DOMContentLoaded', () => { updateBucketIdDisplay(); setCloudStatus('offline'); });
+setInterval(() => { if (cloudDirty && cloudReady) flushCloud(); else cloudPull(); }, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (cloudDirty && cloudReady) flushCloud(); else cloudPull(); } });
+window.addEventListener('online', () => { if (cloudDirty && cloudReady) flushCloud(); else cloudPull(); });
+window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+
+  const ligneOrdre = ['Fontaine', 'Mairie', 'Technicentre', 'Hôpital', '*Stockage', '*Dépot', 'Ville'];
+        const tempsTrajetSecondes = {
+            'Fontaine->Mairie': 65, 'Mairie->Technicentre': 9, 'Technicentre->Hôpital': 27, 'Hôpital->*Stockage': 25, '*Stockage->*Dépot': 8, '*Dépot->Ville': 16,
+            'Ville->*Dépot': 16, '*Dépot->*Stockage': 8, '*Stockage->Hôpital': 25, 'Hôpital->Technicentre': 27, 'Technicentre->Mairie': 9, 'Mairie->Fontaine': 65
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            detecterPlateforme();
+            restaurerSession();
+        });
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const name = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const button = e.submitter;
+            if (button) button.disabled = true;
+            try {
+                const result = await api('login', 'POST', { name, password });
+                currentUser = result.name;
+                currentUserIsAdmin = result.admin === true;
+                try { await initializeCloud(); }
+                catch (error) { setCloudStatus('error', error.message); }
+                document.getElementById('auth-password').value = '';
+                verifierAccesEtAfficherSelection();
+            } catch (error) { currentUser = null; cloudReady = false; alert(error.message); }
+            finally { if (button) button.disabled = false; }
+        }
+
+        function verifierAccesEtAfficherSelection() {
+            document.getElementById('current-user-display').innerText = currentUser;
+            
+            // Afficher la gestion des comptes selon les droits vérifiés par le serveur.
+            const grid = document.getElementById('modes-grid');
+            const adminMenuId = 'admin-menu-card';
+            let existingAdminCard = document.getElementById(adminMenuId);
+
+            if (currentUserIsAdmin) {
+                grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6 pt-4";
+                if (!existingAdminCard) {
+                    let card = document.createElement('button');
+                    card.id = adminMenuId;
+                    card.onclick = () => openAdminComptesModule();
+                    card.className = "group relative bg-snck-card border border-amber-500/30 hover:border-amber-500 p-8 rounded-2xl text-left transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/10 hover:-translate-y-1 cursor-pointer md:col-span-2";
+                    card.innerHTML = `
+                        <div class="absolute top-6 right-6 w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-user-shield text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2 text-amber-400">Gestion des Comptes (Admin)</h3>
+                        <p class="text-gray-400 text-sm mb-4">Panneau exclusif pour créer, modifier ou supprimer les accès conducteurs.</p>
+                        <span class="inline-flex items-center gap-2 text-amber-400 font-semibold text-sm">
+                            Gérer les comptes <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </span>`;
+                    grid.appendChild(card);
+                }
+            } else {
+                grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6 pt-4";
+                if (existingAdminCard) existingAdminCard.remove();
+            }
+
+            switchScreen('screen-selection');
+        }
+
+        async function deconnecterCompte() {
+            if (cloudDirty) { await flushCloud(); if (cloudDirty) { alert('Synchronisation en attente. Réessaie avant de te déconnecter.'); return; } }
+            try { await api('logout', 'POST'); } catch (error) { alert(error.message); return; }
+            cloudReady = false;
+            accountsState = [];
+            setCloudStatus('offline');
+            localStorage.removeItem('snck_current_user');
+            currentUser = null;
+            currentUserIsAdmin = false;
+            viderCachesLocaux();
+            document.getElementById('auth-username').value = '';
+            document.getElementById('auth-password').value = '';
+            switchScreen('screen-auth');
+        }
+
+        function openAdminComptesModule() {
+            switchScreen('screen-admin-comptes');
+            renderComptesList();
+        }
+
+        async function handleCreateAccount(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-user-id').value.trim();
+            const password = document.getElementById('new-user-pwd').value;
+            const button = e.submitter;
+            if (button) button.disabled = true;
+            try {
+                await api('accounts', 'POST', { name, password });
+                accountsState = await api('accounts');
+                document.getElementById('new-user-id').value = '';
+                document.getElementById('new-user-pwd').value = '';
+                renderComptesList();
+            } catch (error) { alert(error.message); }
+            finally { if (button) button.disabled = false; }
+        }
+
+        function renderComptesList() {
+            const container = document.getElementById('liste-comptes-container');
+            container.innerHTML = '';
+            accountsState.forEach((acc, idx) => {
+                let isKeke = acc.admin === true;
+                container.innerHTML += `
+                    <div class="bg-snck-dark border border-snck-border p-4 rounded-xl flex justify-between items-center text-sm">
+                        <div>
+                            <span class="font-bold text-blue-400">${escapeHtml(acc.id)}</span> 
+                            <span class="text-xs text-gray-500 ml-2">Mot de passe protégé</span>
+                            ${isKeke ? '<span class="ml-3 px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">Admin Principal</span>' : ''}
+                        </div>
+                        ${!isKeke ? `<button onclick="deleteAccount(${idx})" class="px-3 py-1 bg-red-500/10 text-red-400 text-xs rounded-lg hover:bg-red-500/20 cursor-pointer">Supprimer</button>` : ''}
+                    </div>`;
+            });
+        }
+
+        async function deleteAccount(idx) {
+            if (!confirm('Supprimer ce compte conducteur ?')) return;
+            try {
+                await api('accounts', 'DELETE', { name: accountsState[idx].id });
+                accountsState = await api('accounts');
+                renderComptesList();
+            } catch (error) { alert(error.message); }
+        }
+        function escapeHtml(value) {
+            const element = document.createElement('span'); element.textContent = String(value); return element.innerHTML;
+        }
+
+        function sauvegarderStorage(now) {
+            localStorage.setItem('snck_sillons', JSON.stringify(sillonsState));
+            cloudSave(now);
+        }
+
+
+        function formaterDateJJMM(dateStr) {
+            if (!dateStr) return '--/--';
+            let parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}`;
+            }
+            return dateStr;
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('fr-FR');
+            document.getElementById('pc-clock').innerText = timeStr;
+            document.getElementById('tel-clock').innerText = timeStr;
+            
+            if (activeSillonIndex !== null && !serviceAtteintTerminus) {
+                const sillonActif = sillonsState[activeSillonIndex];
+                if (sillonActif) {
+                    if (!sillonActif.isStarted) {
+                        calculerRetardAutomatique(activeSillonIndex);
+                    }
+                    verifierHeureDepartAtteinte();
+                }
+                mettreAJourAffichageRetard(); // actualise l'avance/retard en haut des horaires chaque seconde
+                verifierBoutonFinService();
+            }
+        }, 1000);
+
+        
+
+        // ====== Lignes du réseau ======
+        // Ligne 2 : voie unique. ZC = Zone de Croisement, traitée comme une gare (arrêt possible pour croiser).
+        const LIBELLES_GARES = { 'ZC': 'ZC (Zone Croisement)' };
+        const LIGNES = {
+            fontaine: { nom: 'Ligne Fontaine - Ville', ordre: ligneOrdre, temps: tempsTrajetSecondes, voieUnique: false },
+            pavillon: {
+                nom: 'Ligne Hôpital - Pavillon Noir',
+                ordre: ['Hôpital', 'Ville', 'Zoo', 'ZC', 'Pavillon Noir'],
+                temps: {
+                    'Hôpital->Ville': 35, 'Ville->Zoo': 25, 'Zoo->ZC': 26, 'ZC->Pavillon Noir': 13,
+                    'Ville->Hôpital': 35, 'Zoo->Ville': 25, 'ZC->Zoo': 26, 'Pavillon Noir->ZC': 13
+                },
+                voieUnique: true
+            }
+        };
+        // Voies possibles par gare sur la ligne Hôpital - Pavillon Noir
+        const VOIES_PAVILLON = {
+            'Hôpital': ['Voie C', 'Voie D'],
+            'Ville': ['Voie C', 'Voie D'],
+            'Zoo': ['Voie A', 'Voie B'],
+            'Pavillon Noir': ['Voie A', 'Voie B']
+        };
+        // Les sillons créés avant l'ajout des lignes n'ont pas de champ "ligne" : ils restent sur Fontaine - Ville.
+        function ligneDe(s) { return LIGNES[s && s.ligne] || LIGNES.fontaine; }
+
+        function changerLigne() {
+            const L = ligneDe({ ligne: document.getElementById('sillon-ligne').value });
+            const opts = L.ordre.map(g => `<option value="${g}">${escapeHtml(LIBELLES_GARES[g] || g)}</option>`).join('');
+            const o = document.getElementById('sillon-origine'), t = document.getElementById('sillon-terminus');
+            o.innerHTML = opts; t.innerHTML = opts;
+            o.value = L.ordre[0]; t.value = L.ordre[L.ordre.length - 1];
+            document.getElementById('arrets-container').innerHTML = L.ordre.slice(1, -1).map(g => `
+                <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="${g}" class="rounded bg-snck-dark border-snck-border text-blue-500"> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
+                    <input type="number" id="arret-duree-${g}" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                </div>`).join('');
+            updateVoiesOptions();
+        }
+
+        function updateVoiesOptions() {
+            const ligneOrdre = ligneDe({ ligne: document.getElementById('sillon-ligne').value }).ordre;
+            const origine = document.getElementById('sillon-origine').value;
+            const terminus = document.getElementById('sillon-terminus').value;
+            const ligneCle = document.getElementById('sillon-ligne').value;
+            const estPavillon = ligneCle === 'pavillon';
+            document.getElementById('container-voie-fontaine').style.display = (!estPavillon && (origine === 'Fontaine' || terminus === 'Fontaine')) ? 'block' : 'none';
+            document.getElementById('container-voie-ville').style.display = (!estPavillon && (() => { const a = ligneOrdre.indexOf(origine), b = ligneOrdre.indexOf(terminus), v = ligneOrdre.indexOf('Ville'); return v >= Math.min(a, b) && v <= Math.max(a, b); })()) ? 'block' : 'none';
+            const iO = ligneOrdre.indexOf(origine), iT = ligneOrdre.indexOf(terminus), lo = Math.min(iO, iT), hi = Math.max(iO, iT);
+            // Ligne Hôpital - Pavillon Noir : choix de la voie dans chaque gare du parcours (ZC = croisement, sans voie)
+            document.getElementById('container-voies-pavillon').style.display = estPavillon ? 'grid' : 'none';
+            Object.keys(VOIES_PAVILLON).forEach(g => {
+                const i = ligneOrdre.indexOf(g);
+                document.getElementById('cv-pav-' + g).style.display = (estPavillon && i >= lo && i <= hi) ? 'block' : 'none';
+            });
+            document.querySelectorAll('input[name="arret-inter"]').forEach(cb => {
+                const i = ligneOrdre.indexOf(cb.value), ok = i > lo && i < hi;
+                cb.disabled = !ok; if (!ok) cb.checked = false;
+                cb.closest('div.flex').classList.toggle('opacity-40', !ok);
+            });
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+            const b = document.getElementById('cloud-status-badge');
+            if (b) b.style.display = screenId === 'screen-cabine-tel' ? 'none' : '';
+        }
+
+        function openCreateSillonModule() {
+            currentPlatform = 'pc';
+            switchScreen('screen-create-sillon');
+            changerLigne();
+            updateVoiesOptions();
+            renderSillons();
+        }
+
+        function openConduireModule(platform) {
+            currentPlatform = platform || 'pc';
+            switchScreen('screen-conduire');
+            renderSillonsConduite();
+        }
+
+        function retourMenuConduite() {
+            if (currentPlatform === 'tel') {
+                switchScreen('screen-tel-menu');
+            } else {
+                switchScreen('screen-pc-menu');
+            }
+        }
+
+        function handleCreateSillon(e) {
+            e.preventDefault();
+            const numero = document.getElementById('sillon-numero').value.trim();
+            const dateBrute = document.getElementById('sillon-date').value;
+            const dateJJMM = formaterDateJJMM(dateBrute);
+            const depart = document.getElementById('sillon-depart-heure').value;
+            const composition = document.getElementById('sillon-composition').value;
+            const origine = document.getElementById('sillon-origine').value;
+            const terminus = document.getElementById('sillon-terminus').value;
+            const voieFontaine = document.getElementById('voie-fontaine').value;
+            const voieVille = document.getElementById('voie-ville').value;
+            const ligne = document.getElementById('sillon-ligne').value;
+            const ligneOrdre = ligneDe({ ligne }).ordre;
+            if (origine === terminus) { alert("L'origine et le terminus doivent être différents."); return; }
+            if (sillonsState.some(x => String(x.numero).toLowerCase() === numero.toLowerCase() && x.dateBrute === dateBrute)) { alert('Un sillon avec ce numéro existe déjà à cette date.'); return; }
+            const iO = ligneOrdre.indexOf(origine), iT = ligneOrdre.indexOf(terminus), lo = Math.min(iO, iT), hi = Math.max(iO, iT);
+
+            const checkboxes = document.querySelectorAll('input[name="arret-inter"]:checked');
+            let arretsInter = [];
+            let arretsDurees = {};
+            checkboxes.forEach(cb => {
+                const i = ligneOrdre.indexOf(cb.value); if (i <= lo || i >= hi) return;
+                arretsInter.push(cb.value);
+                arretsDurees[cb.value] = parseInt(document.getElementById(`arret-duree-${cb.value}`).value) || 0;
+            });
+
+            const voies = {};
+            if (ligne === 'pavillon') {
+                Object.keys(VOIES_PAVILLON).forEach(g => {
+                    const i = ligneOrdre.indexOf(g);
+                    if (i >= lo && i <= hi) voies[g] = document.getElementById('voie-pav-' + g).value;
+                });
+            }
+
+            sillonsState.push({
+                id: uuid(), numero, ligne, dateBrute, dateJJMM, depart, composition, origine, terminus, voieFontaine, voieVille, voies,
+                arretsInter, arretsDurees, statut: 'Libre', retard: 0, retardManuel: 0, isStarted: false, motifRetard: ''
+            });
+
+            sauvegarderStorage();
+            document.getElementById('form-sillon').reset();
+            document.getElementById('sillon-ligne').value = ligne;
+            changerLigne();
+            updateVoiesOptions();
+            renderSillons();
+        }
+
+        function renderSillons() {
+            const container = document.getElementById('liste-sillons');
+            document.getElementById('sillons-count').innerText = `${sillonsState.length} sillon${sillonsState.length > 1 ? 's' : ''} actif${sillonsState.length > 1 ? 's' : ''}`;
+            if (sillonsState.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 bg-snck-card border border-snck-border rounded-2xl text-gray-400">Aucun sillon prévu.</div>`;
+                return;
+            }
+            container.innerHTML = '';
+            sillonsState.forEach((sillon, index) => {
+                const supprimeSvc = !!(sillon.serviceSupprime || sillon.statut === 'Supprimé');
+                container.innerHTML += `
+                    <div class="bg-snck-card border border-snck-border rounded-2xl p-5 flex justify-between items-center ${supprimeSvc ? 'opacity-70' : ''}">
+                        <div class="space-y-1 text-sm">
+                            <div>
+                                <span class="px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono font-bold">${escapeHtml(sillon.numero)}</span> 
+                                <span class="ml-2 font-semibold text-indigo-300">[${escapeHtml(sillon.dateJJMM)}]</span>
+                                <span class="ml-2 font-semibold">Départ : ${escapeHtml(sillon.depart)}</span>
+                                <span class="ml-3 px-2 py-0.5 rounded text-xs ${supprimeSvc ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${escapeHtml(sillon.statut)}</span>
+                            </div>
+                            <div class="text-xs text-gray-400">Composition : ${escapeHtml(sillon.composition)}</div>
+                            <div class="text-xs text-gray-400">Ligne : ${escapeHtml(ligneDe(sillon).nom)}</div>
+                            <div class="text-xs text-gray-400">Parcours : ${parcoursHtml(sillon)}</div>
+                            ${badgesPrevisionHtml(sillon)}
+                        </div>
+                        <div class="flex flex-col gap-2 shrink-0 ml-3">
+                            <button onclick="openRetardModal(${index})" class="px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg cursor-pointer hover:bg-amber-500/20"><i class="fa-solid fa-clock mr-1"></i> Prévoir retard / arrêts</button>
+                            <button onclick="togglerServiceSupprime(${index})" class="px-3 py-1.5 bg-orange-500/10 text-orange-400 text-xs rounded-lg cursor-pointer hover:bg-orange-500/20"><i class="fa-solid fa-ban mr-1"></i> ${supprimeSvc ? 'Rétablir le service' : 'Supprimer le service'}</button>
+                            <button onclick="deleteSillon(${index})" class="px-3 py-1.5 bg-red-500/10 text-red-400 text-xs rounded-lg cursor-pointer hover:bg-red-500/20">Supprimer le sillon</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function renderSillonsConduite() {
+            const container = document.getElementById('liste-sillons-conduite');
+            if (sillonsState.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 bg-snck-dark border border-snck-border rounded-2xl text-gray-400">Aucun sillon disponible.</div>`;
+                return;
+            }
+            container.innerHTML = '';
+            sillonsState.forEach((sillon, index) => {
+                let isOccuped = (sillon.statut === 'En Service');
+                let isSupprime = (sillon.statut === 'Supprimé' || sillon.serviceSupprime);
+                let badgeStatut = '';
+                let opacityClass = '';
+                let textBarre = '';
+                let btnAction = '';
+
+                if (isSupprime) {
+                    badgeStatut = `<span class="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20 font-bold">Service supprimé</span>`;
+                    opacityClass = 'opacity-40';
+                    textBarre = 'line-through';
+                    btnAction = `<button disabled class="px-4 py-2 rounded-xl bg-gray-800 text-gray-600 cursor-not-allowed text-xs font-semibold"><i class="fa-solid fa-ban mr-1"></i> Indisponible</button>`;
+                } else if (isOccuped) {
+                    badgeStatut = `<span class="px-2 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">En Service</span>`;
+                    opacityClass = (sillon.conducteur || currentUser) === currentUser ? '' : 'opacity-50';
+                    btnAction = (sillon.conducteur || currentUser) === currentUser
+                        ? `<button onclick="reprendreService(${index})" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white cursor-pointer text-xs font-semibold">Reprendre</button>`
+                        : `<button disabled class="px-4 py-2 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed text-xs font-semibold">Occupé</button>`;
+                } else {
+                    badgeStatut = `<span class="px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">Libre</span>`;
+                    btnAction = `<button onclick="ouvrirPriseServiceModal(${index})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer text-xs font-semibold">Je fais ce service</button>`;
+                }
+
+                container.innerHTML += `
+                    <div class="bg-snck-dark border border-snck-border rounded-2xl p-4 flex justify-between items-center ${opacityClass}">
+                        <div class="space-y-1 text-sm">
+                            <div>
+                                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-bold ${textBarre}">${escapeHtml(sillon.numero)}</span>
+                                <span class="ml-2 text-indigo-300 font-semibold ${textBarre}">[${escapeHtml(sillon.dateJJMM)}]</span>
+                                <span class="ml-2 font-semibold ${textBarre}">Départ : ${escapeHtml(heureDepartAffichee(sillon))}</span>
+                                ${badgeStatut}
+                            </div>
+                            <div class="text-xs text-gray-400 ${textBarre}">Parcours : ${parcoursHtml(sillon)}</div>
+                            ${badgesPrevisionHtml(sillon)}
+                        </div>
+                        ${btnAction}
+                    </div>`;
+            });
+        }
+
+        function ouvrirPriseServiceModal(index) {
+            pendingPriseIndex = index;
+            document.getElementById('prise-service-details').innerText = `Sillon ${sillonsState[index].numero} (Date: ${sillonsState[index].dateJJMM} - ${sillonsState[index].origine} ➔ ${sillonsState[index].terminus})`;
+            document.getElementById('modal-prise-service').classList.remove('hidden');
+        }
+
+        function closePriseServiceModal() {
+            document.getElementById('modal-prise-service').classList.add('hidden');
+            pendingPriseIndex = null;
+        }
+
+        function confirmerPriseService() {
+            if (pendingPriseIndex === null) return;
+            const index = pendingPriseIndex, s = sillonsState[index];
+            if (!s || s.statut !== 'Libre') { closePriseServiceModal(); alert('Ce service n’est plus disponible.'); return; }
+            s.statut = 'En Service'; s.conducteur = currentUser;
+            closePriseServiceModal();
+            sauvegarderStorage(true);
+            entrerCabine(index);
+        }
+
+        function determinerVoieGare(gare, sillon) {
+            if (gare === '*Stockage' || gare === '*Dépot') return '';
+            if (sillon.ligne === 'pavillon') return (sillon.voies && sillon.voies[gare]) || '';
+            if (gare === 'Fontaine') return sillon.voieFontaine || 'Voie A';
+            if (gare === 'Ville') return sillon.voieVille || 'Voie A';
+            return (ligneOrdre.indexOf(sillon.terminus) > ligneOrdre.indexOf(sillon.origine)) ? 'Voie A' : 'Voie B';
+        }
+
+// ====== Retards par gare + perturbations en cabine ======
+// s.retardsGares = { "Mairie": { min: -7, motif: "..." }, ... } : écart (en min) valable à partir de cette gare
+// jusqu'à la prochaine gare renseignée. Sans retardsGares, l'ancien système (retardAuto + retardManuel) s'applique.
+function routeDe(s) {
+    const o = ligneDe(s).ordre, a = o.indexOf(s.origine), b = o.indexOf(s.terminus);
+    if (a < 0 || b < 0) return [];
+    return b >= a ? o.slice(a, b + 1) : o.slice(b, a + 1).reverse();
+}
+function garesDesservies(s) {
+    const r = routeDe(s);
+    return r.filter((g, i) => i === 0 || i === r.length - 1 || (s.arretsInter || []).includes(g));
+}
+function aRetardsGares(s) { return !!(s && s.retardsGares && Object.keys(s.retardsGares).length); }
+function retardAutoDe(s) {
+    return s.retardAuto !== undefined ? s.retardAuto : Math.max(0, (s.retard || 0) - (s.retardManuel || 0));
+}
+function retardA(s, gare) {
+    if (!aRetardsGares(s)) return retardAutoDe(s) + (Number(s.retardManuel) || 0);
+    let cur = retardAutoDe(s);
+    for (const g of routeDe(s)) {
+        const p = s.retardsGares[g];
+        if (p && Number.isFinite(Number(p.min))) cur = Number(p.min);
+        if (g === gare) break;
+    }
+    return cur;
+}
+function motifRetardA(s, gare) {
+    let cur = s.motifRetard || '';
+    if (aRetardsGares(s)) {
+        for (const g of routeDe(s)) {
+            const p = s.retardsGares[g];
+            if (p && Number.isFinite(Number(p.min))) cur = p.motif || s.motifRetard || '';
+            if (g === gare) break;
+        }
+    }
+    return retardA(s, gare) !== 0 ? cur : '';
+}
+const fmtEcart = n => (n > 0 ? '+' : '') + n + ' min';
+
+// ====== Arrêts supprimés ======
+// s.arretsSupprimes = { "Fontaine": true, ... } : le train circule mais ne dessert plus ces gares (elles restent affichées « Arrêt supprimé »).
+// Les horaires théoriques ne changent pas : seul le départ / l'arrivée effectifs se déplacent sur le premier / dernier arrêt desservi.
+function estSupprime(s, g) { return !!(s && s.arretsSupprimes && s.arretsSupprimes[g]); }
+function garesServies(s) { return garesDesservies(s).filter(g => !estSupprime(s, g)); }
+function gareDepart(s) { const l = garesServies(s); return l.length ? l[0] : s.origine; }
+function gareArrivee(s) { const l = garesServies(s); return l.length ? l[l.length - 1] : s.terminus; }
+function hhmm(sec) {
+    const t = ((Math.floor(sec) % 86400) + 86400) % 86400;
+    return String(Math.floor(t / 3600)).padStart(2, '0') + ':' + String(Math.floor((t % 3600) / 60)).padStart(2, '0');
+}
+// Secondes théoriques écoulées depuis le départ de l'origine, pour chaque gare du parcours
+function offsetsTheoSec(s) {
+    const L = ligneDe(s), o = L.ordre, route = routeDe(s);
+    const dir = o.indexOf(s.terminus) > o.indexOf(s.origine) ? 1 : -1;
+    const res = {}; let t = 0;
+    route.forEach((g, i) => {
+        if (i > 0) {
+            const p = route[i - 1];
+            t += L.temps[dir === 1 ? `${p}->${g}` : `${g}->${p}`] || 0;
+            if ((s.arretsInter || []).includes(p)) t += ((s.arretsDurees || {})[p] || 0) * 60;
+        }
+        res[g] = t;
+    });
+    return res;
+}
+function heureDepartAffichee(s) {
+    const [h, m] = String(s.depart).split(':').map(Number);
+    return hhmm((h * 60 + m) * 60 + (offsetsTheoSec(s)[gareDepart(s)] || 0));
+}
+function parcoursHtml(s) {
+    return garesDesservies(s).map(g => estSupprime(s, g)
+        ? `<span class="line-through text-red-400/80" title="Arrêt supprimé">${escapeHtml(g)}</span>` : escapeHtml(g)).join(' ➔ ');
+}
+function badgesPrevisionHtml(s) {
+    const b = (c, t) => `<span class="px-2 py-0.5 rounded text-[11px] bg-${c}-500/10 text-${c}-400 border border-${c}-500/20 font-semibold">${t}</span>`;
+    const out = [];
+    if (s.serviceSupprime || s.statut === 'Supprimé') out.push(b('red', '<i class="fa-solid fa-ban mr-1"></i>Service supprimé'));
+    const sup = garesDesservies(s).filter(g => estSupprime(s, g));
+    if (sup.length) out.push(b('red', `<i class="fa-solid fa-ban mr-1"></i>${sup.length > 1 ? 'Arrêts supprimés' : 'Arrêt supprimé'} : ${escapeHtml(sup.join(', '))}`));
+    if (aRetardsGares(s)) out.push(b('amber', '<i class="fa-solid fa-clock mr-1"></i>' + garesServies(s).map(g => `${escapeHtml(g)} ${fmtEcart(retardA(s, g))}`).join(' · ')));
+    else if (Number(s.retardManuel)) out.push(b(s.retardManuel > 0 ? 'amber' : 'blue', `<i class="fa-solid fa-clock mr-1"></i>${s.retardManuel > 0 ? 'Retard' : 'Avance'} ${fmtEcart(Number(s.retardManuel))}`));
+    return out.length ? `<div class="flex flex-wrap gap-1.5 pt-1">${out.join('')}</div>` : '';
+}
+
+const SECTIONS_PERTURBATION = {
+    'Section Fontaine - Mairie': ['Fontaine', 'Mairie'],
+    'Section Mairie - Hôpital': ['Mairie', 'Hôpital'],
+    'Section Hôpital - Ville': ['Hôpital', 'Ville']
+};
+function perturbationConcerne(p, s) {
+    const sec = SECTIONS_PERTURBATION[p.ligne];
+    if (!sec) return true; // « Toute la ligne »
+    const route = routeDe(s);
+    if (s.ligne === 'pavillon') return route.includes(sec[0]) && route.includes(sec[1]);
+    const o = LIGNES.fontaine.ordre, idx = route.map(g => o.indexOf(g)).filter(i => i >= 0);
+    if (!idx.length) return false;
+    return Math.max(Math.min(...idx), o.indexOf(sec[0])) < Math.min(Math.max(...idx), o.indexOf(sec[1]));
+}
+function renderPerturbationsCab(sillon) {
+    ['pc-cabine-perturbations', 'tel-cabine-perturbations'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const liste = (perturbationsState || []).filter(p => p && p.actif !== false);
+        if (!sillon || liste.length === 0) {
+            el.innerHTML = '<div class="text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2"><i class="fa-solid fa-circle-check mr-1"></i> Aucune perturbation signalée sur le réseau.</div>';
+            return;
+        }
+        const items = liste.map(p => ({ p, concerne: perturbationConcerne(p, sillon) }))
+            .sort((a, b) => (b.concerne - a.concerne) || ((b.p.type === 'Interruption') - (a.p.type === 'Interruption')));
+        el.innerHTML = '<div class="text-xs font-bold text-gray-300 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation text-red-400 mr-1"></i> Perturbations (' + items.length + ')</div>' +
+            items.map(({ p, concerne }) => {
+                const c = p.type === 'Interruption' ? 'red' : 'amber';
+                return `<div class="rounded-xl border border-${c}-500/${concerne ? '40' : '15'} bg-${c}-500/${concerne ? '10' : '5'} px-3 py-2 ${concerne ? '' : 'opacity-60'}">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] bg-${c}-500/20 text-${c}-400 border border-${c}-500/30 font-bold uppercase">${escapeHtml(p.type || 'Perturbation')}</span>
+                        <span class="font-bold text-sm text-white">${escapeHtml(p.nom || '')}</span>
+                    </div>
+                    <div class="text-[11px] text-gray-400 mt-1">
+                        <i class="fa-solid fa-route mr-1"></i>${escapeHtml(p.ligne || 'Toute la ligne')}
+                        ${p.heureFin ? ' | <i class="fa-solid fa-clock mr-1"></i>Fin prévue : ' + escapeHtml(p.heureFin) : ''}
+                        ${concerne ? ' | <b class="text-' + c + '-400">Concerne votre parcours</b>' : ' | Hors de votre parcours'}
+                    </div>
+                </div>`;
+            }).join('');
+    });
+}
+
+function majTitresCabine() {
+    const s = getActif(); if (!s) return;
+    const a = gareDepart(s), b = gareArrivee(s);
+    const t = document.getElementById('tel-cabine-sous-titre'); if (t) t.innerText = `Destination ${b}`;
+    const p = document.getElementById('pc-cabine-titre'); if (p) p.innerText = `${a} ➔ ${b}`;
+}
+
+function calculerHorairesParcours() {
+    if (activeSillonIndex === null) return [];
+    const sillon = sillonsState[activeSillonIndex];
+    const sousLigne = routeDe(sillon);
+    const off = offsetsTheoSec(sillon);
+    const [h, m] = sillon.depart.split(':').map(Number);
+    const baseSec = (h * 60 + m) * 60;
+    const horairesTheoriques = sousLigne.map(g => hhmm(baseSec + (off[g] || 0)));
+    const horairesReels = sousLigne.map(g => hhmm(baseSec + (off[g] || 0) + retardA(sillon, g) * 60));
+
+    // Départ / arrivée effectifs = premier / dernier arrêt NON supprimé
+    const gDep = gareDepart(sillon), gArr = gareArrivee(sillon);
+    heureArriveeFinaleReelle = horairesReels[sousLigne.indexOf(gArr)];
+    heureArriveeFinaleTs = departOrigineTs(sillon) + ((off[gArr] || 0) + retardA(sillon, gArr) * 60) * 1000;
+
+    if (currentPlatform !== 'tel') {
+        document.getElementById('pc-cabine-horaires').innerText = `${horairesReels[sousLigne.indexOf(gDep)]} ➔ ${heureArriveeFinaleReelle}`;
+    }
+    majTitresCabine();
+
+    const container = document.getElementById(currentPlatform === 'tel' ? 'tel-cabine-parcours-list' : 'pc-cabine-parcours-list');
+    container.innerHTML = '';
+
+    sousLigne.forEach((gare, idx) => {
+        let isOrigineTerminus = (idx === 0 || idx === sousLigne.length - 1);
+        let isDesservi = isOrigineTerminus || sillon.arretsInter.includes(gare);
+        if (!isDesservi) return;
+
+        const supprime = estSupprime(sillon, gare);
+        let voie = determinerVoieGare(gare, sillon);
+        let arretTxt = (!supprime && !isOrigineTerminus && sillon.arretsDurees[gare]) ? `${escapeHtml(sillon.arretsDurees[gare])} min d'arrêt` : '';
+        let timeTheo = horairesTheoriques[idx];
+        let timeReel = horairesReels[idx];
+        let isDecale = (timeReel !== timeTheo);
+        const retG = retardA(sillon, gare), motifG = motifRetardA(sillon, gare);
+        const tagSuppr = `<div class="text-[11px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded inline-block mt-1"><i class="fa-solid fa-ban mr-1"></i>Arrêt supprimé</div>`;
+        const tagRetard = supprime ? tagSuppr : (retG !== 0
+            ? `<div class="text-[11px] font-semibold ${retG > 0 ? 'text-amber-400' : 'text-blue-400'} mt-1">${retG > 0 ? 'Retard' : 'Avance'} ${fmtEcart(retG)}${motifG ? ' · ' + escapeHtml(motifG) : ''}</div>` : '');
+
+        if (currentPlatform === 'tel') {
+            container.innerHTML += `
+                <div class="grid grid-cols-[55px_24px_1fr] items-start gap-2 relative ${supprime ? 'opacity-70' : ''}">
+                    <div class="${supprime ? 'bg-gray-700/20 text-gray-500 line-through border-gray-600/30' : 'bg-indigo-500/20 text-indigo-300 border-indigo-400/30'} font-mono text-[11px] font-bold px-1.5 py-0.5 rounded text-center border">${supprime ? timeTheo : timeReel}</div>
+                    <div class="flex flex-col items-center h-full relative"><div class="w-3.5 h-3.5 rounded-full bg-[#0B0E17] border-2 ${supprime ? 'border-red-400' : 'border-indigo-400'} z-10 my-0.5"></div><div class="w-0.5 bg-indigo-500/40 flex-1 my-1"></div></div>
+                    <div class="pb-3"><h4 class="font-extrabold text-base ${supprime ? 'line-through text-gray-500' : 'text-white'}">${escapeHtml(gare)}</h4>${voie && !supprime ? `<div class="text-xs text-indigo-300">${escapeHtml(voie)}</div>`:''}${arretTxt ? `<div class="text-[11px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded inline-block mt-1 border border-amber-500/20">${escapeHtml(arretTxt)}</div>`:''}${tagRetard}</div>
+                </div>`;
+        } else {
+            let affichageHoraire = supprime
+                ? `<span class="line-through text-gray-600 text-xs">${timeTheo}</span>`
+                : (isDecale
+                    ? `<span class="line-through text-gray-500 text-xs mr-2">${timeTheo}</span><span class="text-amber-400 font-bold">${timeReel}</span>`
+                    : `<span class="text-emerald-400 font-bold">${timeReel}</span>`);
+
+            container.innerHTML += `
+                <div class="relative flex items-center justify-between ${supprime ? 'opacity-70' : ''}">
+                    <div class="absolute -left-[31px] w-4 h-4 rounded-full ${supprime ? 'bg-red-500' : 'bg-emerald-500'} border-2 border-snck-card"></div>
+                    <div>
+                        <span class="font-bold text-base ${supprime ? 'line-through text-gray-500' : ''}">${escapeHtml(gare)}</span>
+                        <div class="text-xs text-gray-400">${supprime ? '' : escapeHtml(voie)} ${arretTxt ? `<span class="text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 ml-2">${escapeHtml(arretTxt)}</span>` : ''}</div>
+                        ${tagRetard}
+                    </div>
+                    <div class="text-right font-mono text-sm">${affichageHoraire}</div>
+                </div>`;
+        }
+    });
+    renderPerturbationsCab(sillon);
+    return horairesReels;
+}
+        function calculerRetardAutomatique(index) {
+            const s = sillonsState[index];
+            if (!s || s.isStarted || serviceAtteintTerminus) return;
+            const auto = Math.max(0, Math.floor((Date.now() - departTs(s)) / 60000));
+            const ancienAuto = s.retardAuto;
+            s.retardAuto = auto;
+            const r = retardA(s, gareDepart(s));
+            if (r === s.retard && auto === ancienAuto) return;
+            s.retard = r;
+            sauvegarderStorage();
+            if (index === activeSillonIndex) { calculerHorairesParcours(); mettreAJourAffichageRetard(); }
+        }
+
+        function mettreAJourAffichageRetard() {
+            if (activeSillonIndex === null) return;
+            const sillon = sillonsState[activeSillonIndex];
+            let txt, cls;
+            if (aRetardsGares(sillon)) {
+                txt = garesServies(sillon).map(g => `${g} ${retardA(sillon, g) > 0 ? '+' : ''}${retardA(sillon, g)}`).join(' · ');
+                const fin = retardA(sillon, gareArrivee(sillon));
+                cls = fin > 0 ? 'amber' : fin < 0 ? 'blue' : 'emerald';
+            } else {
+                const totalRetard = sillon.retard || 0;
+                if (totalRetard > 0) { cls = 'amber'; txt = `+${totalRetard} min (Retard)`; }
+                else if (totalRetard < 0) { cls = 'blue'; txt = `${totalRetard} min (Avance)`; }
+                else { cls = 'emerald'; txt = "+0 min (À l'heure)"; }
+            }
+            const supAff = garesDesservies(sillon).filter(g => estSupprime(sillon, g));
+            if (supAff.length) txt += ` · ${supAff.length > 1 ? 'Arrêts supprimés' : 'Arrêt supprimé'} : ${supAff.join(', ')}`;
+            const pcRetard = document.getElementById('pc-cabine-retard');
+            if (pcRetard) { pcRetard.className = `text-xs font-semibold text-${cls}-400 mt-1 max-w-xs`; pcRetard.innerText = txt; }
+            const telRetard = document.getElementById('tel-cabine-retard');
+            if (telRetard) { telRetard.className = `text-[11px] font-semibold text-${cls}-400 mt-0.5`; telRetard.innerText = txt; }
+        }
+
+        function verifierHeureDepartAtteinte() {
+            const sillon = getActif();
+            if (!sillon || sillon.isStarted) return;
+            const ok = Date.now() >= departTs(sillon);
+            const st = ok ? 'go' : 'wait:' + sillon.dateBrute + heureDepartAffichee(sillon);
+            document.querySelectorAll('.btn-commencer-conduite').forEach(btn => {
+                if (btn.dataset.st === st) return;
+                btn.dataset.st = st;
+                const pc = btn.id === 'btn-commencer-pc';
+                if (ok) {
+                    btn.removeAttribute('disabled');
+                    btn.className = pc ? "btn-commencer-conduite px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold cursor-pointer"
+                        : "btn-commencer-conduite py-3 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-lg";
+                    btn.innerHTML = `<i class="fa-solid fa-play"></i> Commencer le service`;
+                } else {
+                    btn.setAttribute('disabled', 'true');
+                    btn.className = pc ? "btn-commencer-conduite px-4 py-2 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-sm font-semibold cursor-not-allowed"
+                        : "btn-commencer-conduite py-3 px-2 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed";
+                    btn.innerHTML = `Départ à ${escapeHtml(heureDepartAffichee(sillon))} (${escapeHtml(sillon.dateJJMM)})`;
+                }
+            });
+        }
+
+        function toggleCommencerConduite() {
+            const s = getActif();
+            if (!s || serviceAtteintTerminus) return;
+            if (Date.now() < departTs(s)) { alert(`Impossible de démarrer : l'heure de départ (${heureDepartAffichee(s)}, ${s.dateJJMM}) n'est pas encore atteinte.`); return; }
+            if (s.isStarted && !confirm('Remettre ce service à « non commencé » ?')) return;
+            if (!s.isStarted) calculerRetardAutomatique(activeSillonIndex);
+            s.isStarted = !s.isStarted;
+            sauvegarderStorage(true);
+            updateBoutonConduiteUI();
+            mettreAJourAffichageRetard();
+        }
+
+        function updateBoutonConduiteUI() {
+            const sillon = getActif();
+            if (!sillon) return;
+            if (!sillon.isStarted) { verifierHeureDepartAtteinte(); return; }
+            document.querySelectorAll('.btn-commencer-conduite').forEach(btn => {
+                btn.dataset.st = 'run';
+                btn.removeAttribute('disabled');
+                btn.className = btn.id === 'btn-commencer-pc'
+                    ? "btn-commencer-conduite px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold cursor-pointer"
+                    : "btn-commencer-conduite py-3 px-2 rounded-xl bg-blue-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-lg";
+                btn.innerHTML = `<i class="fa-solid fa-train"></i> Train en route`;
+            });
+        }
+
+        function verifierBoutonFinService() {
+            if (!heureArriveeFinaleTs || serviceAtteintTerminus || Date.now() < heureArriveeFinaleTs) return;
+            serviceAtteintTerminus = true;
+            setFinEtat(true);
+        }
+
+        // Cible du modal : le train en cabine (conduite) ou un sillon choisi depuis l'horairiste (prévision)
+        let retardCibleIndex = null;
+        function cibleRetard() { return retardCibleIndex !== null ? (sillonsState[retardCibleIndex] || null) : getActif(); }
+
+        function openRetardModal(index) {
+            retardCibleIndex = (typeof index === 'number') ? index : null;
+            const s = cibleRetard(); if (!s) return;
+            const man = Number(s.retardManuel) || 0;
+            document.getElementById('retard-modal-titre').innerHTML = retardCibleIndex !== null
+                ? `<i class="fa-solid fa-calendar-check"></i> Prévoir retard / suppression · ${escapeHtml(s.numero)} [${escapeHtml(s.dateJJMM)}]`
+                : `<i class="fa-solid fa-clock"></i> Avance / Retard / Arrêts`;
+            document.getElementById('retard-mode').value = aRetardsGares(s) ? 'gares' : 'global';
+            document.getElementById('retard-type').value = man < 0 ? 'avance' : 'retard';
+            document.getElementById('retard-minutes').value = man ? Math.abs(man) : 5;
+            document.getElementById('retard-motif').value = s.motifRetard || '';
+            document.getElementById('retard-gares-liste').innerHTML = garesDesservies(s).map(g => {
+                const p = (s.retardsGares || {})[g] || {};
+                const v = Number.isFinite(Number(p.min)) && p.min !== undefined && p.min !== null ? p.min : '';
+                return `<div class="retard-gare-row grid grid-cols-[1fr_88px] gap-2 items-center bg-snck-dark border border-snck-border rounded-xl p-2" data-gare="${escapeHtml(g)}">
+                    <span class="text-sm font-semibold px-1">${escapeHtml(g)}</span>
+                    <input type="number" step="1" class="retard-gare-min bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-sm text-white text-center" placeholder="=" value="${v}">
+                    <input type="text" class="retard-gare-motif col-span-2 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white" placeholder="Motif pour cette gare (optionnel)" value="${escapeHtml(p.motif || '')}">
+                </div>`;
+            }).join('');
+            document.getElementById('retard-arrets-liste').innerHTML = garesDesservies(s).map(g => `
+                <label class="flex items-center justify-between bg-snck-dark border border-snck-border rounded-xl px-3 py-2 cursor-pointer">
+                    <span class="text-sm font-semibold">${escapeHtml(g)}</span>
+                    <span class="flex items-center gap-2 text-xs text-red-400 font-semibold">
+                        <input type="checkbox" class="suppr-arret-cb rounded bg-snck-dark border-snck-border text-red-500" value="${escapeHtml(g)}" ${estSupprime(s, g) ? 'checked' : ''}> Arrêt supprimé
+                    </span>
+                </label>`).join('');
+            changerModeRetard();
+            document.getElementById('modal-retard').classList.remove('hidden');
+        }
+        function changerModeRetard() {
+            const mode = document.getElementById('retard-mode').value;
+            const gares = mode === 'gares', global = mode === 'global';
+            document.getElementById('retard-bloc-global').classList.toggle('hidden', !global);
+            document.getElementById('retard-bloc-gares').classList.toggle('hidden', !gares);
+            document.getElementById('retard-bloc-motif').classList.toggle('hidden', mode === 'inchange');
+            document.getElementById('retard-minutes').required = global;
+            document.getElementById('retard-motif').required = global;
+            document.getElementById('retard-motif-label').innerText = gares ? 'Motif général (optionnel si renseigné par gare)' : 'Motif';
+        }
+        function closeRetardModal() { document.getElementById('modal-retard').classList.add('hidden'); retardCibleIndex = null; }
+
+        function rafraichirApresModificationTrain(s) {
+            renderSillons(); renderSillonsConduite();
+            if (s === getActif()) { mettreAJourAffichageRetard(); calculerHorairesParcours(); }
+        }
+
+        function handleSignalerRetardAvance(e) {
+            e.preventDefault();
+            const s = cibleRetard(); if (!s) return;
+            const mode = document.getElementById('retard-mode').value;
+
+            // Arrêts supprimés : il doit rester au moins 2 arrêts desservis
+            const sup = {};
+            document.querySelectorAll('.suppr-arret-cb:checked').forEach(cb => { sup[cb.value] = true; });
+            if (garesDesservies(s).filter(g => !sup[g]).length < 2) {
+                alert("Il doit rester au moins deux arrêts desservis. Pour annuler tout le train, utilise « Supprimer le service ».");
+                return;
+            }
+
+            if (mode !== 'inchange') {
+                const ancien = s.retardManuel || 0;
+                if (s.retardAuto === undefined) s.retardAuto = Math.max(0, (s.retard || 0) - ancien);
+                if (mode === 'gares') {
+                    const p = {};
+                    document.querySelectorAll('.retard-gare-row').forEach(row => {
+                        const v = row.querySelector('.retard-gare-min').value.trim();
+                        if (v === '' || !Number.isFinite(parseInt(v, 10))) return;
+                        p[row.dataset.gare] = { min: parseInt(v, 10), motif: row.querySelector('.retard-gare-motif').value.trim() };
+                    });
+                    if (!Object.keys(p).length) { alert('Renseigne un écart pour au moins une gare.'); return; }
+                    s.motifRetard = document.getElementById('retard-motif').value.trim();
+                    s.retardsGares = p;
+                    s.retardManuel = 0;
+                } else {
+                    const mins = parseInt(document.getElementById('retard-minutes').value) || 0;
+                    s.motifRetard = document.getElementById('retard-motif').value.trim();
+                    delete s.retardsGares;
+                    s.retardManuel = document.getElementById('retard-type').value === 'avance' ? -mins : mins;
+                }
+            }
+            if (Object.keys(sup).length) s.arretsSupprimes = sup; else delete s.arretsSupprimes;
+            s.retard = retardA(s, gareDepart(s));
+            sauvegarderStorage(true);
+            closeRetardModal();
+            rafraichirApresModificationTrain(s);
+        }
+
+        function effacerRetardsManuels() {
+            const s = cibleRetard(); if (!s) return;
+            if (!confirm('Effacer les retards / avances et les arrêts supprimés de ce train ?')) return;
+            if (s.retardAuto === undefined) s.retardAuto = Math.max(0, (s.retard || 0) - (s.retardManuel || 0));
+            delete s.retardsGares; delete s.arretsSupprimes; s.retardManuel = 0; s.motifRetard = '';
+            s.retard = retardA(s, gareDepart(s));
+            sauvegarderStorage(true);
+            closeRetardModal();
+            rafraichirApresModificationTrain(s);
+        }
+
+        // Prévoir depuis l'horairiste : supprimer / rétablir tout le service
+        function togglerServiceSupprime(index) {
+            const s = sillonsState[index]; if (!s) return;
+            if (s.statut === 'En Service') { alert('Ce service est en cours : il doit être supprimé depuis la cabine.'); return; }
+            if (s.serviceSupprime || s.statut === 'Supprimé') {
+                delete s.serviceSupprime; s.statut = 'Libre';
+            } else {
+                if (!confirm("Marquer ce service comme supprimé ? Il restera visible (barré) jusqu'à son heure d'arrivée, puis disparaîtra.")) return;
+                s.statut = 'Supprimé'; s.serviceSupprime = true;
+            }
+            sauvegarderStorage(true);
+            renderSillons(); renderSillonsConduite();
+        }
+
+        function ouvrirFicheFinService() {
+            const sillon = getActif(); if (!sillon) return;
+            document.getElementById('fiche-numero').innerText = sillon.numero;
+            document.getElementById('fiche-parcours').innerText = `${sillon.dateJJMM} • ${gareDepart(sillon)} ➔ ${gareArrivee(sillon)}`;
+            document.getElementById('modal-fiche-fin').classList.remove('hidden');
+        }
+
+        function validerEtQuitterService() {
+            if (activeSillonIndex !== null) {
+                sillonsState.splice(activeSillonIndex, 1);
+                sauvegarderStorage();
+                activeSillonIndex = null;
+            }
+            document.getElementById('modal-fiche-fin').classList.add('hidden');
+            document.getElementById('tel-btn-retour').style.display = 'flex';
+            document.getElementById('pc-btn-retour').style.display = 'flex';
+            openConduireModule(currentPlatform);
+        }
+
+
+        // ============================================================
+        // FONCTIONNALITÉS AJOUTÉES
+        // ============================================================
+
+        // Détection plateforme : verrouiller par cadenas le mode inadapté à l'écran
+        function detecterPlateforme() {
+            const btnTel = document.getElementById('btn-mode-tel');
+            const btnPc = document.getElementById('btn-mode-pc');
+            const lockTel = document.getElementById('tel-lock-badge');
+            const lockPc = document.getElementById('pc-lock-badge');
+            const isPc = window.innerWidth >= 768; // Tablette et plus grand -> mode PC
+            // Mode Téléphone verrouillé sur grand écran
+            if (btnTel) {
+                btnTel.classList.toggle('pointer-events-none', isPc);
+                if (lockTel) lockTel.classList.toggle('hidden', !isPc);
+            }
+            // Mode PC verrouillé sur petit écran
+            if (btnPc) {
+                btnPc.classList.toggle('pointer-events-none', !isPc);
+                if (lockPc) lockPc.classList.toggle('hidden', isPc);
+            }
+        }
+        window.addEventListener('resize', detecterPlateforme);
+
+        // Menu Horairiste & Perturbations
+        function openHorairistePerturbations() {
+            switchScreen('screen-hp-menu');
+        }
+
+        // Module Perturbations
+        function openPerturbationsModule() {
+            switchScreen('screen-perturbations');
+            renderPerturbations();
+        }
+
+        // Gestion des perturbations (stockées dans localStorage)
+        let perturbationsState = JSON.parse(localStorage.getItem('snck_perturbations')) || [];
+
+        function handleSignalerPerturbation(e) {
+            e.preventDefault();
+            const nom = document.getElementById('perturbation-nom').value.trim();
+            const type = document.getElementById('perturbation-type').value;
+            const heureFin = document.getElementById('perturbation-heure-fin').value;
+            const ligne = document.getElementById('perturbation-ligne').value;
+
+            const perturbation = {
+                id: uuid(),
+                nom, type, heureFin, ligne,
+                dateCreation: new Date().toLocaleString('fr-FR'),
+                actif: true
+            };
+
+            perturbationsState.push(perturbation);
+            localStorage.setItem('snck_perturbations', JSON.stringify(perturbationsState));
+
+            // Synchroniser les perturbations avec les autres appareils.
+            sauvegarderPerturbationsCloud();
+
+            // Réinitialiser le formulaire
+            document.getElementById('perturbation-nom').value = '';
+            document.getElementById('perturbation-heure-fin').value = '';
+
+            renderPerturbations();
+            alert('Perturbation publiée sur le réseau !');
+        }
+
+        function sauvegarderPerturbationsCloud() { cloudSave(true); }
+
+        function renderPerturbations() {
+            const container = document.getElementById('liste-perturbations');
+            if (!container) return;
+            if (perturbationsState.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 bg-snck-card border border-snck-border rounded-2xl text-gray-400 text-sm">Aucune perturbation signalée.</div>';
+                return;
+            }
+            container.innerHTML = '<h3 class="text-lg font-bold mb-3">Perturbations actives</h3>';
+            perturbationsState.forEach((p, idx) => {
+                const couleur = p.type === 'Interruption' ? 'red' : 'amber';
+                container.innerHTML += `
+                    <div class="bg-snck-card border border-${couleur}-500/30 rounded-xl p-4 flex justify-between items-center">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-xs bg-${couleur}-500/10 text-${couleur}-400 border border-${couleur}-500/20 font-bold">${escapeHtml(p.type)}</span>
+                                <span class="font-bold">${escapeHtml(p.nom)}</span>
+                            </div>
+                            <div class="text-xs text-gray-400">
+                                <i class="fa-solid fa-route mr-1"></i> ${escapeHtml(p.ligne)} 
+                                | <i class="fa-solid fa-clock mr-1"></i> Fin prévue : ${escapeHtml(p.heureFin)}
+                                | <i class="fa-solid fa-calendar mr-1"></i> ${escapeHtml(p.dateCreation)}
+                            </div>
+                        </div>
+                        <button onclick="supprimerPerturbation(${idx})" class="px-3 py-1.5 bg-red-500/10 text-red-400 text-xs rounded-lg hover:bg-red-500/20 cursor-pointer shrink-0 ml-3">
+                            <i class="fa-solid fa-trash mr-1"></i> Retirer
+                        </button>
+                    </div>`;
+            });
+        }
+
+        function supprimerPerturbation(idx) {
+            if (confirm('Retirer cette perturbation ?')) {
+                perturbationsState.splice(idx, 1);
+                localStorage.setItem('snck_perturbations', JSON.stringify(perturbationsState));
+                sauvegarderPerturbationsCloud();
+                renderPerturbations();
+            }
+        }
+
+        // Supprimer le Service depuis la Cabine
+        function supprimerService() {
+            if (!confirm('Supprimer ce service ? Le sillon restera visible jusqu\'à son heure d\'arrivée au terminus, mais sera marqué comme supprimé.')) return;
+
+            if (activeSillonIndex !== null) {
+                let sillon = sillonsState[activeSillonIndex];
+                // Marquer comme supprimé au lieu de le retirer
+                sillon.statut = 'Supprimé';
+                sillon.serviceSupprime = true;
+                sauvegarderStorage();
+                activeSillonIndex = null;
+            }
+
+            // Réafficher les boutons retour
+            document.getElementById('tel-btn-retour').style.display = 'flex';
+            document.getElementById('pc-btn-retour').style.display = 'flex';
+            openConduireModule(currentPlatform);
+        }
+
+        function uuid() { return crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
+        function copierTexte(t) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).catch(() => prompt('Copie manuelle :', t)); }
+        function viderCachesLocaux() {
+            sillonsState = []; perturbationsState = []; activeSillonIndex = null;
+            localStorage.removeItem('snck_sillons'); localStorage.removeItem('snck_perturbations');
+        }
+        function getActif() { return activeSillonIndex === null ? null : (sillonsState[activeSillonIndex] || null); }
+        // Horodatage du départ à l'origine (date + heure) : évite les erreurs de jour / minuit
+        function departOrigineTs(s) {
+            const [h, m] = String(s.depart).split(':').map(Number);
+            const d = s.dateBrute ? new Date(s.dateBrute + 'T00:00:00') : new Date();
+            d.setHours(h, m, 0, 0);
+            return d.getTime();
+        }
+        // Départ effectif : premier arrêt non supprimé (= origine si aucun arrêt supprimé)
+        function departTs(s) { return departOrigineTs(s) + (offsetsTheoSec(s)[gareDepart(s)] || 0) * 1000; }
+        // Durée théorique entre le premier et le dernier arrêt desservis
+        function dureeSec(s) {
+            const o = offsetsTheoSec(s);
+            return (o[gareArrivee(s)] || 0) - (o[gareDepart(s)] || 0);
+        }
+        function setFinEtat(on) {
+            document.querySelectorAll('#pc-btn-fin-service, #tel-btn-b3').forEach(b => {
+                b.disabled = !on;
+                ['bg-blue-600', 'hover:bg-blue-500', 'text-white', 'cursor-pointer'].forEach(c => b.classList.toggle(c, on));
+                ['bg-gray-800', 'text-gray-500', 'cursor-not-allowed'].forEach(c => b.classList.toggle(c, !on));
+            });
+            document.querySelectorAll('.fin-service-timer').forEach(t => t.innerText = on ? `Prêt (${heureArriveeFinaleReelle})` : 'En attente');
+        }
+        function entrerCabine(index) {
+            activeSillonIndex = index;
+            const sillon = sillonsState[index];
+            serviceAtteintTerminus = false; heureArriveeFinaleTs = null; heureArriveeFinaleReelle = null;
+            setFinEtat(false);
+            document.querySelectorAll('.btn-commencer-conduite').forEach(b => b.dataset.st = '');
+            document.getElementById('tel-btn-retour').style.display = 'none';
+            document.getElementById('pc-btn-retour').style.display = 'none';
+            if (currentPlatform === 'tel') {
+                switchScreen('screen-cabine-tel');
+                document.getElementById('tel-cabine-titre').innerText = `Train ${sillon.numero}`;
+                document.getElementById('tel-cabine-sous-titre').innerText = `Destination ${sillon.terminus}`;
+                document.getElementById('tel-cabine-date-comp').innerText = `${sillon.dateJJMM} • ${sillon.composition}`;
+            } else {
+                switchScreen('screen-cabine-pc');
+                document.getElementById('pc-cabine-numero').innerText = sillon.numero;
+                document.getElementById('pc-cabine-titre').innerText = `${sillon.origine} ➔ ${sillon.terminus}`;
+                document.getElementById('pc-cabine-date').innerText = `Date : ${sillon.dateJJMM} • Conducteur : ${currentUser}`;
+            }
+            updateBoutonConduiteUI();
+            calculerRetardAutomatique(index);
+            calculerHorairesParcours();
+            verifierHeureDepartAtteinte();
+        }
+        function reprendreService(index) {
+            const s = sillonsState[index];
+            if (s && s.statut === 'En Service' && (s.conducteur || currentUser) === currentUser) { s.conducteur = currentUser; entrerCabine(index); }
+        }
+        // Les services supprimés disparaissent une fois l'heure d'arrivée passée
+        function purgerSillonsSupprimes() {
+            const now = Date.now(), act = getActif();
+            const keep = sillonsState.filter(s => !(s.serviceSupprime && now > departTs(s) + (retardA(s, gareArrivee(s)) * 60 + dureeSec(s)) * 1000));
+            if (keep.length === sillonsState.length) return;
+            sillonsState = keep;
+            activeSillonIndex = act ? sillonsState.indexOf(act) : null;
+            if (activeSillonIndex === -1) activeSillonIndex = null;
+            sauvegarderStorage(); renderSillons(); renderSillonsConduite();
+        }
+        setInterval(() => { if (currentUser && cloudReady) purgerSillonsSupprimes(); }, 30000);
+
+        function deleteSillon(index) {
+            if (confirm("Supprimer ce sillon ?")) {
+                sillonsState.splice(index, 1);
+                sauvegarderStorage();
+                renderSillons();
+            }
+        }
+    </script>
+</body>
+</html>

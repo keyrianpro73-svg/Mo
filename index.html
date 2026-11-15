@@ -405,7 +405,7 @@
                                 <select id="sillon-ligne" onchange="changerLigne()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
                                     <option value="fontaine">Ligne Fontaine - Ville</option>
                                     <option value="pavillon">Ligne Hôpital - Pavillon Noir (voie unique)</option>
-                                    <option value="trans">Trans-Lignes (plusieurs lignes sur un même sillon)</option>
+                                    <option value="trans">Translignes</option>
                                 </select>
                             </div>
                             
@@ -499,9 +499,9 @@
 
                             <!-- MODE TRANS-LIGNES -->
                             <div id="bloc-trans" class="space-y-4" style="display:none">
-                                <p class="text-xs text-gray-400">Mode <b class="text-blue-400">Trans-Lignes</b> : un même train circule sur plusieurs lignes. Pour chaque tronçon, choisis la ligne et coche les arrêts desservis (ils restent dans l'ordre de la ligne). Le 1er et le dernier arrêt cochés sont l'origine et le terminus du tronçon ; le tronçon suivant démarre à la correspondance.</p>
+                                <p class="text-xs text-gray-400">Mode <b class="text-blue-400">Trans-Lignes</b> : coche simplement les arrêts du train sur les deux lignes (dans l'ordre de la ligne). La gare commune (Hôpital ou Ville) est la correspondance.</p>
                                 <div id="trans-segments" class="space-y-4"></div>
-                                <button type="button" onclick="transAjouterSegment()" class="px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold hover:bg-blue-500/20 cursor-pointer"><i class="fa-solid fa-plus mr-1"></i> Ajouter un tronçon (autre ligne)</button>
+                                
                             </div>
                         </div>
 
@@ -1328,42 +1328,24 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             return `${s.origine} ➔ ${s.arretsInter.length ? s.arretsInter.join(' ➔ ') + ' ➔ ' : ''}${s.terminus}`;
         }
 
-        // ====== Mode Trans-Lignes : constructeur de tronçons ======
-        let transSegs = [];
+        // ====== Mode Translignes : les arrêts des 2 lignes, on coche, le reste est automatique ======
+        let transSegs = [], transLignes = {}, transDir = 1;
         function transOrdre(st) { const o = LIGNES[st.ligne].ordre; return st.sens === -1 ? [...o].reverse() : o; }
         function transSelection(st) { return transOrdre(st).filter(g => st.arrets[g] && st.arrets[g].on); }
-        function transNouveau(ligne, sens, premier) {
-            const st = { ligne, sens, arrets: {}, exc: {}, voies: {}, voieFontaine: 'Voie A', voieVille: 'Voie A', attente: 1 };
-            if (premier && LIGNES[ligne].ordre.includes(premier)) st.arrets[premier] = { on: true, duree: 1 };
-            return st;
+        function transNouveau(ligne) {
+            return { ligne, sens: 1, arrets: {}, exc: {}, voies: {}, voieFontaine: 'Voie A', voieVille: 'Voie A', attente: 1 };
+        }
+        function transSync() {
+            const F = transLignes.fontaine, P = transLignes.pavillon;
+            F.sens = P.sens = transDir;
+            transSegs = transDir === 1 ? [F, P] : [P, F];
         }
         function transInit() {
-            const a = transNouveau('fontaine', 1, 'Fontaine');
-            a.arrets['Hôpital'] = { on: true, duree: 1 };
-            transSegs = [a];
-            transAjouterSegment();
-        }
-        function transAjouterSegment() {
-            const prec = transSegs[transSegs.length - 1];
-            const prevTerm = prec ? transSelection(prec).slice(-1)[0] : null;
-            let ligne = prec ? (prec.ligne === 'fontaine' ? 'pavillon' : 'fontaine') : 'fontaine';
-            if (prevTerm && !LIGNES[ligne].ordre.includes(prevTerm)) ligne = prec.ligne; // pas de correspondance possible vers l'autre ligne
-            const ordre = LIGNES[ligne].ordre;
-            const sens = prevTerm && ordre.indexOf(prevTerm) === ordre.length - 1 ? -1 : 1;
-            transSegs.push(transNouveau(ligne, sens, prevTerm));
+            transLignes = { fontaine: transNouveau('fontaine'), pavillon: transNouveau('pavillon') };
+            transDir = 1;
             renderTrans();
         }
-        function transSupprimerSegment(i) { transSegs.splice(i, 1); if (!transSegs.length) transInit(); else renderTrans(); }
-        function transSetLigne(i, v) {
-            const prevTerm = i > 0 ? transSelection(transSegs[i - 1]).slice(-1)[0] : null;
-            const ordre = LIGNES[v].ordre;
-            const sens = prevTerm && ordre.indexOf(prevTerm) === ordre.length - 1 ? -1 : 1;
-            const old = transSegs[i];
-            transSegs[i] = transNouveau(v, sens, prevTerm);
-            transSegs[i].attente = old.attente;
-            renderTrans();
-        }
-        function transSetSens(i, v) { transSegs[i].sens = parseInt(v, 10) === -1 ? -1 : 1; renderTrans(); }
+        function transSetDir(v) { transDir = parseInt(v, 10) === -1 ? -1 : 1; renderTrans(); }
         function transToggle(i, k, on) {
             const st = transSegs[i], g = LIGNES[st.ligne].ordre[k];
             st.arrets[g] = Object.assign(st.arrets[g] || { duree: 1 }, { on });
@@ -1382,8 +1364,6 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             const first = sel[0], last = sel[sel.length - 1];
             const prevTerm = i > 0 ? transSelection(transSegs[i - 1]).slice(-1)[0] : null;
             const lo = L.ordre;
-            const optLignes = Object.keys(LIGNES).map(k => `<option value="${k}" ${k === st.ligne ? 'selected' : ''}>${escapeHtml(LIGNES[k].nom)}</option>`).join('');
-            const optSens = `<option value="1" ${st.sens !== -1 ? 'selected' : ''}>${escapeHtml(lo[0])} ➔ ${escapeHtml(lo[lo.length - 1])}</option><option value="-1" ${st.sens === -1 ? 'selected' : ''}>${escapeHtml(lo[lo.length - 1])} ➔ ${escapeHtml(lo[0])}</option>`;
             const selCls = 'bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white';
             const rows = ordre.map(g => {
                 const k = lo.indexOf(g), a = st.arrets[g], on = !!(a && a.on);
@@ -1415,33 +1395,40 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             if (i > 0) {
                 const ok = !prevTerm || !first || first === prevTerm;
                 corr = `<div class="text-xs rounded-xl border px-3 py-2 flex flex-wrap items-center gap-2 ${ok ? 'border-amber-500/20 bg-amber-500/5 text-amber-300' : 'border-red-500/40 bg-red-500/10 text-red-400'}">
-                    <i class="fa-solid fa-right-left"></i> Correspondance : ce tronçon doit commencer à <b>${escapeHtml(prevTerm || '?')}</b>${ok ? '' : ' (actuellement : ' + escapeHtml(first) + ')'}
+                    <i class="fa-solid fa-right-left"></i> Correspondance à <b>${escapeHtml(prevTerm || '?')}</b>${ok ? '' : ' : coche aussi ' + escapeHtml(prevTerm || '?') + ' sur cette ligne en premier arrêt (actuellement : ' + escapeHtml(first) + ')'}
                     <span class="ml-auto flex items-center gap-1 text-gray-300">Temps de correspondance <input type="number" min="0" value="${st.attente ?? 1}" onchange="transAttente(${i},this.value)" class="w-14 ${selCls} text-center"> min</span></div>`;
             }
             return `<div class="rounded-2xl border border-${c}-500/30 bg-snck-dark/50 p-4 space-y-3">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-xs font-bold text-${c}-300 uppercase tracking-wider"><i class="fa-solid fa-train-subway mr-1"></i> Tronçon ${i + 1}</span>
-                    <button type="button" onclick="transSupprimerSegment(${i})" class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 text-[11px] hover:bg-red-500/20 cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div><label class="block text-xs text-gray-400 mb-1">Ligne</label><select onchange="transSetLigne(${i},this.value)" class="w-full ${selCls} py-2">${optLignes}</select></div>
-                    <div><label class="block text-xs text-gray-400 mb-1">Sens</label><select onchange="transSetSens(${i},this.value)" class="w-full ${selCls} py-2">${optSens}</select></div>
-                </div>
+                <div class="text-xs font-bold text-${c}-300 uppercase tracking-wider"><i class="fa-solid fa-train-subway mr-1"></i> ${escapeHtml(L.nom)} <span class="text-gray-400 normal-case font-normal">(${escapeHtml(ordre[0])} ➔ ${escapeHtml(ordre[ordre.length - 1])})</span></div>
                 ${corr}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${rows}</div>
             </div>`;
         }
         function renderTrans() {
             const c = document.getElementById('trans-segments');
-            if (c) c.innerHTML = transSegs.map(transSegHtml).join('');
+            if (!c) return;
+            transSync();
+            const F = LIGNES.fontaine.ordre, P = LIGNES.pavillon.ordre;
+            const res = construireSegmentsTrans();
+            const apercu = res.erreur
+                ? `<div class="text-xs rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-300 px-3 py-2"><i class="fa-solid fa-circle-info mr-1"></i> ${escapeHtml(res.erreur)}</div>`
+                : `<div class="text-xs rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-300 px-3 py-2"><i class="fa-solid fa-route mr-1"></i> ${escapeHtml(res.segments.map(g => garesDesserviesSeg(g).join(' ➔ ')).join('  ‖  '))}</div>`;
+            c.innerHTML = `<div>
+                    <label class="block text-xs text-gray-400 mb-1">Sens du train</label>
+                    <select onchange="transSetDir(this.value)" class="w-full bg-snck-card border border-snck-border rounded-lg px-3 py-2 text-xs text-white">
+                        <option value="1" ${transDir === 1 ? 'selected' : ''}>${escapeHtml(F[0])} ➔ ${escapeHtml(P[P.length - 1])} (ligne 1 puis ligne 2)</option>
+                        <option value="-1" ${transDir === -1 ? 'selected' : ''}>${escapeHtml(P[P.length - 1])} ➔ ${escapeHtml(F[0])} (ligne 2 puis ligne 1)</option>
+                    </select>
+                </div>` + transSegs.map(transSegHtml).join('') + apercu;
         }
         function construireSegmentsTrans() {
-            if (transSegs.length < 2) return { erreur: "Mode Trans-Lignes : ajoute au moins 2 tronçons (sinon choisis une ligne simple)." };
+            if (!transLignes.fontaine) transLignes = { fontaine: transNouveau('fontaine'), pavillon: transNouveau('pavillon') };
+            transSync();
             const segments = [];
             for (let i = 0; i < transSegs.length; i++) {
                 const st = transSegs[i], sel = transSelection(st);
-                if (sel.length < 2) return { erreur: `Tronçon ${i + 1} : sélectionne au moins 2 arrêts (origine et terminus du tronçon).` };
-                if (i > 0 && sel[0] !== segments[i - 1].terminus) return { erreur: `Tronçon ${i + 1} : il doit commencer à ${segments[i - 1].terminus} (correspondance avec le tronçon précédent).` };
+                if (sel.length < 2) return { erreur: `${LIGNES[st.ligne].nom} : coche au moins 2 arrêts (dont la gare de correspondance).` };
+                if (i > 0 && sel[0] !== segments[i - 1].terminus) return { erreur: `${LIGNES[st.ligne].nom} : le 1er arrêt coché doit être ${segments[i - 1].terminus} (gare de correspondance, dernier arrêt de la ligne précédente).` };
                 const inter = sel.slice(1, -1), arretsDurees = {};
                 inter.forEach(g => { arretsDurees[g] = Math.max(0, parseInt(st.arrets[g].duree, 10) || 0); });
                 const voies = {};

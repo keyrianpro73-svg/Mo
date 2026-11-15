@@ -405,9 +405,11 @@
                                 <select id="sillon-ligne" onchange="changerLigne()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
                                     <option value="fontaine">Ligne Fontaine - Ville</option>
                                     <option value="pavillon">Ligne Hôpital - Pavillon Noir (voie unique)</option>
+                                    <option value="trans">Trans-Lignes (plusieurs lignes sur un même sillon)</option>
                                 </select>
                             </div>
                             
+                            <div id="bloc-monoligne" class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs text-gray-400 mb-1">Origine</label>
@@ -489,6 +491,18 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="mt-4">
+                                <label class="block text-xs text-rose-300 mb-2"><i class="fa-solid fa-circle-exclamation mr-1"></i> Arrêts exceptionnels (facultatif) — gares normalement non desservies où le train s'arrêtera exceptionnellement</label>
+                                <div id="arrets-exc-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                            </div>
+                            </div><!-- /bloc-monoligne -->
+
+                            <!-- MODE TRANS-LIGNES -->
+                            <div id="bloc-trans" class="space-y-4" style="display:none">
+                                <p class="text-xs text-gray-400">Mode <b class="text-blue-400">Trans-Lignes</b> : un même train circule sur plusieurs lignes. Pour chaque tronçon, choisis la ligne et coche les arrêts desservis (ils restent dans l'ordre de la ligne). Le 1er et le dernier arrêt cochés sont l'origine et le terminus du tronçon ; le tronçon suivant démarre à la correspondance.</p>
+                                <div id="trans-segments" class="space-y-4"></div>
+                                <button type="button" onclick="transAjouterSegment()" class="px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold hover:bg-blue-500/20 cursor-pointer"><i class="fa-solid fa-plus mr-1"></i> Ajouter un tronçon (autre ligne)</button>
+                            </div>
                         </div>
 
                         <div class="flex justify-end">
@@ -543,6 +557,9 @@
                     <button onclick="openRetardModal()" class="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold hover:bg-amber-500/20 cursor-pointer">
                         <i class="fa-solid fa-clock"></i> Signaler retard / avance
                     </button>
+                    <button onclick="openArretExcModal()" class="px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm font-semibold hover:bg-rose-500/20 cursor-pointer">
+                        <i class="fa-solid fa-circle-exclamation"></i> Arrêt exceptionnel
+                    </button>
                     <button id="btn-commencer-pc" onclick="toggleCommencerConduite()" disabled class="btn-commencer-conduite px-4 py-2 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-sm font-semibold cursor-not-allowed">
                         Commencer le service (Attente heure départ)
                     </button>
@@ -595,6 +612,9 @@
                         <i class="fa-solid fa-clock"></i> Avance / Retard
                     </button>
                 </div>
+                <button onclick="openArretExcModal()" class="w-full py-2.5 px-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-500/20 cursor-pointer">
+                    <i class="fa-solid fa-circle-exclamation"></i> Arrêt exceptionnel
+                </button>
                 <button id="tel-btn-b3" onclick="ouvrirFicheFinService()" disabled class="w-full py-2.5 px-3 rounded-xl bg-gray-800 text-gray-500 border border-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed">
                     <i class="fa-solid fa-flag-checkered"></i> Finir le service (<span class="fin-service-timer">En attente</span>)
                 </button>
@@ -629,6 +649,21 @@
                 <div><span class="text-xs text-gray-400 block">Parcours</span><span id="fiche-parcours" class="font-semibold">--</span></div>
             </div>
             <button onclick="validerEtQuitterService()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm cursor-pointer">Terminer et Supprimer le Sillon</button>
+        </div>
+    </div>
+
+    <!-- MODALE ARRÊT EXCEPTIONNEL -->
+    <div id="modal-arret-exc" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold text-rose-400 flex items-center gap-2"><i class="fa-solid fa-circle-exclamation"></i> Arrêt exceptionnel</h3>
+            <p class="text-xs text-gray-400">Coche les gares du parcours où le train s'arrête exceptionnellement et indique la durée d'arrêt (min). Les horaires suivants sont recalculés. Décocher une gare retire l'arrêt.</p>
+            <form onsubmit="handleArretExc(event)" class="space-y-4">
+                <div id="arret-exc-liste" class="space-y-2"></div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeArretExcModal()" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300">Annuler</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 text-white font-semibold">Appliquer</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1246,8 +1281,8 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
                 nom: 'Ligne Hôpital - Pavillon Noir',
                 ordre: ['Hôpital', 'Ville', 'Zoo', 'ZC', 'Pavillon Noir'],
                 temps: {
-                    'Hôpital->Ville': 35, 'Ville->Zoo': 25, 'Zoo->ZC': 26, 'ZC->Pavillon Noir': 13,
-                    'Ville->Hôpital': 35, 'Zoo->Ville': 25, 'ZC->Zoo': 26, 'Pavillon Noir->ZC': 13
+                    'Hôpital->Ville': 38.95, 'Ville->Zoo': 25.66, 'Zoo->ZC': 10, 'ZC->Pavillon Noir': 24,
+                    'Ville->Hôpital': 38.95, 'Zoo->Ville': 25.66, 'ZC->Zoo': 10, 'Pavillon Noir->ZC': 24
                 },
                 voieUnique: true
             }
@@ -1262,7 +1297,176 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
         // Les sillons créés avant l'ajout des lignes n'ont pas de champ "ligne" : ils restent sur Fontaine - Ville.
         function ligneDe(s) { return LIGNES[s && s.ligne] || LIGNES.fontaine; }
 
+        // ====== Tronçons (un sillon normal = 1 tronçon ; un sillon Trans-Lignes = plusieurs tronçons) ======
+        const COULEUR_LIGNE = { fontaine: 'blue', pavillon: 'violet' };
+        // Tronçons tels que planifiés (sans arrêts exceptionnels)
+        function baseTroncons(s) {
+            if (s && s.ligne === 'trans' && Array.isArray(s.segments) && s.segments.length) return s.segments;
+            return [{ ligne: s.ligne, origine: s.origine, terminus: s.terminus, arretsInter: s.arretsInter || [], arretsDurees: s.arretsDurees || {}, voies: s.voies || {}, voieFontaine: s.voieFontaine, voieVille: s.voieVille }];
+        }
+        // Tronçons effectifs : planifiés + arrêts exceptionnels (s.exceptionnels = { gare: minutes })
+        function troncons(s) {
+            const base = baseTroncons(s), exc = s && s.exceptionnels;
+            if (!exc || !Object.keys(exc).length) return base;
+            return base.map(seg => {
+                const inter = [...(seg.arretsInter || [])], durees = Object.assign({}, seg.arretsDurees || {});
+                routeSeg(seg).slice(1, -1).forEach(g => { if (exc[g] !== undefined && !inter.includes(g)) { inter.push(g); durees[g] = Number(exc[g]) || 0; } });
+                return Object.assign({}, seg, { arretsInter: inter, arretsDurees: durees });
+            });
+        }
+        function eligiblesExc(s) {
+            const out = [];
+            baseTroncons(s).forEach(seg => routeSeg(seg).slice(1, -1).forEach(g => { if (!(seg.arretsInter || []).includes(g) && !out.includes(g)) out.push(g); }));
+            return out;
+        }
+        function nomLigneDe(s) {
+            return s && s.ligne === 'trans' ? 'Trans-Lignes (' + troncons(s).map(g => ligneDe(g).nom).join(' + ') + ')' : ligneDe(s).nom;
+        }
+        function parcoursTexte(s) {
+            if (s.ligne === 'trans') return troncons(s).map(g => garesDesserviesSeg(g).join(' ➔ ')).join('  ‖  ');
+            if (s.exceptionnels && Object.keys(s.exceptionnels).length) return garesDesservies(s).join(' ➔ ');
+            return `${s.origine} ➔ ${s.arretsInter.length ? s.arretsInter.join(' ➔ ') + ' ➔ ' : ''}${s.terminus}`;
+        }
+
+        // ====== Mode Trans-Lignes : constructeur de tronçons ======
+        let transSegs = [];
+        function transOrdre(st) { const o = LIGNES[st.ligne].ordre; return st.sens === -1 ? [...o].reverse() : o; }
+        function transSelection(st) { return transOrdre(st).filter(g => st.arrets[g] && st.arrets[g].on); }
+        function transNouveau(ligne, sens, premier) {
+            const st = { ligne, sens, arrets: {}, exc: {}, voies: {}, voieFontaine: 'Voie A', voieVille: 'Voie A', attente: 1 };
+            if (premier && LIGNES[ligne].ordre.includes(premier)) st.arrets[premier] = { on: true, duree: 1 };
+            return st;
+        }
+        function transInit() {
+            const a = transNouveau('fontaine', 1, 'Fontaine');
+            a.arrets['Hôpital'] = { on: true, duree: 1 };
+            transSegs = [a];
+            transAjouterSegment();
+        }
+        function transAjouterSegment() {
+            const prec = transSegs[transSegs.length - 1];
+            const prevTerm = prec ? transSelection(prec).slice(-1)[0] : null;
+            let ligne = prec ? (prec.ligne === 'fontaine' ? 'pavillon' : 'fontaine') : 'fontaine';
+            if (prevTerm && !LIGNES[ligne].ordre.includes(prevTerm)) ligne = prec.ligne; // pas de correspondance possible vers l'autre ligne
+            const ordre = LIGNES[ligne].ordre;
+            const sens = prevTerm && ordre.indexOf(prevTerm) === ordre.length - 1 ? -1 : 1;
+            transSegs.push(transNouveau(ligne, sens, prevTerm));
+            renderTrans();
+        }
+        function transSupprimerSegment(i) { transSegs.splice(i, 1); if (!transSegs.length) transInit(); else renderTrans(); }
+        function transSetLigne(i, v) {
+            const prevTerm = i > 0 ? transSelection(transSegs[i - 1]).slice(-1)[0] : null;
+            const ordre = LIGNES[v].ordre;
+            const sens = prevTerm && ordre.indexOf(prevTerm) === ordre.length - 1 ? -1 : 1;
+            const old = transSegs[i];
+            transSegs[i] = transNouveau(v, sens, prevTerm);
+            transSegs[i].attente = old.attente;
+            renderTrans();
+        }
+        function transSetSens(i, v) { transSegs[i].sens = parseInt(v, 10) === -1 ? -1 : 1; renderTrans(); }
+        function transToggle(i, k, on) {
+            const st = transSegs[i], g = LIGNES[st.ligne].ordre[k];
+            st.arrets[g] = Object.assign(st.arrets[g] || { duree: 1 }, { on });
+            renderTrans();
+        }
+        function transExc(i, k, on) { const st = transSegs[i], g = LIGNES[st.ligne].ordre[k]; st.exc[g] = Object.assign(st.exc[g] || { duree: 1 }, { on }); renderTrans(); }
+        function transExcDuree(i, k, v) { const st = transSegs[i], g = LIGNES[st.ligne].ordre[k]; if (st.exc[g]) st.exc[g].duree = Math.max(0, parseInt(v, 10) || 0); }
+        function transDuree(i, k, v) { const st = transSegs[i], g = LIGNES[st.ligne].ordre[k]; if (st.arrets[g]) st.arrets[g].duree = Math.max(0, parseInt(v, 10) || 0); }
+        function transVoie(i, k, v) { const st = transSegs[i]; st.voies[LIGNES[st.ligne].ordre[k]] = v; }
+        function transVoieF(i, champ, v) { transSegs[i][champ] = v; }
+        function transAttente(i, v) { transSegs[i].attente = Math.max(0, parseInt(v, 10) || 0); }
+
+        function transSegHtml(st, i) {
+            const L = LIGNES[st.ligne], c = COULEUR_LIGNE[st.ligne] || 'blue';
+            const ordre = transOrdre(st), sel = transSelection(st);
+            const first = sel[0], last = sel[sel.length - 1];
+            const prevTerm = i > 0 ? transSelection(transSegs[i - 1]).slice(-1)[0] : null;
+            const lo = L.ordre;
+            const optLignes = Object.keys(LIGNES).map(k => `<option value="${k}" ${k === st.ligne ? 'selected' : ''}>${escapeHtml(LIGNES[k].nom)}</option>`).join('');
+            const optSens = `<option value="1" ${st.sens !== -1 ? 'selected' : ''}>${escapeHtml(lo[0])} ➔ ${escapeHtml(lo[lo.length - 1])}</option><option value="-1" ${st.sens === -1 ? 'selected' : ''}>${escapeHtml(lo[lo.length - 1])} ➔ ${escapeHtml(lo[0])}</option>`;
+            const selCls = 'bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white';
+            const rows = ordre.map(g => {
+                const k = lo.indexOf(g), a = st.arrets[g], on = !!(a && a.on);
+                const role = !on || sel.length < 2 ? '' : g === first ? 'Origine' : g === last ? 'Terminus' : '';
+                let extra = '';
+                const pos = ordre.indexOf(g);
+                if (!on && sel.length >= 2 && pos > ordre.indexOf(first) && pos < ordre.indexOf(last)) {
+                    const ex = st.exc[g], exOn = !!(ex && ex.on);
+                    extra += `<label class="text-[10px] text-rose-300 flex items-center gap-1 cursor-pointer"><input type="checkbox" ${exOn ? 'checked' : ''} onchange="transExc(${i},${k},this.checked)" class="rounded bg-snck-dark border-snck-border text-rose-500"> Arrêt exceptionnel</label>`;
+                    if (exOn) extra += `<input type="number" min="0" value="${ex.duree ?? 1}" onchange="transExcDuree(${i},${k},this.value)" class="w-14 ${selCls} text-center"><span class="text-[10px] text-gray-400">min</span>`;
+                }
+                if (on && g !== first && g !== last) extra += `<label class="text-[10px] text-gray-400 flex items-center gap-1">Arrêt <input type="number" min="0" value="${a.duree ?? 1}" onchange="transDuree(${i},${k},this.value)" class="w-14 ${selCls} text-center"> min</label>`;
+                if (on && st.ligne === 'pavillon' && VOIES_PAVILLON[g]) {
+                    const cur = st.voies[g] || VOIES_PAVILLON[g][0];
+                    extra += `<select onchange="transVoie(${i},${k},this.value)" class="${selCls}">${VOIES_PAVILLON[g].map(v => `<option ${v === cur ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                }
+                if (on && st.ligne === 'fontaine' && g === 'Fontaine') {
+                    extra += `<select onchange="transVoieF(${i},'voieFontaine',this.value)" class="${selCls}">${['Voie A', 'Voie B', 'Voie C', 'Voie D', 'Voie E', 'Voie F', 'Voie S1', 'Voie S2'].map(v => `<option ${v === st.voieFontaine ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                }
+                if (on && st.ligne === 'fontaine' && g === 'Ville') {
+                    extra += `<select onchange="transVoieF(${i},'voieVille',this.value)" class="${selCls}">${['Voie A', 'Voie B'].map(v => `<option ${v === st.voieVille ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                }
+                return `<div class="flex items-center justify-between gap-2 flex-wrap p-2.5 rounded-xl border ${on ? `border-${c}-500/40 bg-${c}-500/5` : 'border-snck-border bg-snck-dark'}">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" ${on ? 'checked' : ''} onchange="transToggle(${i},${k},this.checked)" class="rounded bg-snck-dark border-snck-border text-blue-500"> ${escapeHtml(LIBELLES_GARES[g] || g)}${role ? ` <span class="text-[10px] px-1.5 py-0.5 rounded bg-${c}-500/20 text-${c}-300 font-semibold">${role}</span>` : ''}</label>
+                    <div class="flex items-center gap-2">${extra}</div>
+                </div>`;
+            }).join('');
+            let corr = '';
+            if (i > 0) {
+                const ok = !prevTerm || !first || first === prevTerm;
+                corr = `<div class="text-xs rounded-xl border px-3 py-2 flex flex-wrap items-center gap-2 ${ok ? 'border-amber-500/20 bg-amber-500/5 text-amber-300' : 'border-red-500/40 bg-red-500/10 text-red-400'}">
+                    <i class="fa-solid fa-right-left"></i> Correspondance : ce tronçon doit commencer à <b>${escapeHtml(prevTerm || '?')}</b>${ok ? '' : ' (actuellement : ' + escapeHtml(first) + ')'}
+                    <span class="ml-auto flex items-center gap-1 text-gray-300">Temps de correspondance <input type="number" min="0" value="${st.attente ?? 1}" onchange="transAttente(${i},this.value)" class="w-14 ${selCls} text-center"> min</span></div>`;
+            }
+            return `<div class="rounded-2xl border border-${c}-500/30 bg-snck-dark/50 p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-${c}-300 uppercase tracking-wider"><i class="fa-solid fa-train-subway mr-1"></i> Tronçon ${i + 1}</span>
+                    <button type="button" onclick="transSupprimerSegment(${i})" class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 text-[11px] hover:bg-red-500/20 cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label class="block text-xs text-gray-400 mb-1">Ligne</label><select onchange="transSetLigne(${i},this.value)" class="w-full ${selCls} py-2">${optLignes}</select></div>
+                    <div><label class="block text-xs text-gray-400 mb-1">Sens</label><select onchange="transSetSens(${i},this.value)" class="w-full ${selCls} py-2">${optSens}</select></div>
+                </div>
+                ${corr}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${rows}</div>
+            </div>`;
+        }
+        function renderTrans() {
+            const c = document.getElementById('trans-segments');
+            if (c) c.innerHTML = transSegs.map(transSegHtml).join('');
+        }
+        function construireSegmentsTrans() {
+            if (transSegs.length < 2) return { erreur: "Mode Trans-Lignes : ajoute au moins 2 tronçons (sinon choisis une ligne simple)." };
+            const segments = [];
+            for (let i = 0; i < transSegs.length; i++) {
+                const st = transSegs[i], sel = transSelection(st);
+                if (sel.length < 2) return { erreur: `Tronçon ${i + 1} : sélectionne au moins 2 arrêts (origine et terminus du tronçon).` };
+                if (i > 0 && sel[0] !== segments[i - 1].terminus) return { erreur: `Tronçon ${i + 1} : il doit commencer à ${segments[i - 1].terminus} (correspondance avec le tronçon précédent).` };
+                const inter = sel.slice(1, -1), arretsDurees = {};
+                inter.forEach(g => { arretsDurees[g] = Math.max(0, parseInt(st.arrets[g].duree, 10) || 0); });
+                const voies = {};
+                if (st.ligne === 'pavillon') sel.forEach(g => { if (VOIES_PAVILLON[g]) voies[g] = st.voies[g] || VOIES_PAVILLON[g][0]; });
+                const seg = { ligne: st.ligne, origine: sel[0], terminus: sel[sel.length - 1], arretsInter: inter, arretsDurees, voies, voieFontaine: st.voieFontaine, voieVille: st.voieVille };
+                if (i > 0) seg.attenteOrigine = Math.max(0, parseInt(st.attente, 10) || 0);
+                segments.push(seg);
+            }
+            const exceptionnels = {};
+            transSegs.forEach(st => {
+                const sel = transSelection(st); if (sel.length < 2) return;
+                const ordre = transOrdre(st), pf = ordre.indexOf(sel[0]), pl = ordre.indexOf(sel[sel.length - 1]);
+                Object.keys(st.exc || {}).forEach(g => {
+                    const pos = ordre.indexOf(g);
+                    if (st.exc[g].on && pos > pf && pos < pl && !sel.includes(g)) exceptionnels[g] = Math.max(0, parseInt(st.exc[g].duree, 10) || 0);
+                });
+            });
+            return { segments, exceptionnels };
+        }
+
         function changerLigne() {
+            const trans = document.getElementById('sillon-ligne').value === 'trans';
+            document.getElementById('bloc-monoligne').style.display = trans ? 'none' : '';
+            document.getElementById('bloc-trans').style.display = trans ? 'block' : 'none';
+            if (trans) { if (!transSegs.length) transInit(); else renderTrans(); return; }
             const L = ligneDe({ ligne: document.getElementById('sillon-ligne').value });
             const opts = L.ordre.map(g => `<option value="${g}">${escapeHtml(LIBELLES_GARES[g] || g)}</option>`).join('');
             const o = document.getElementById('sillon-origine'), t = document.getElementById('sillon-terminus');
@@ -1273,10 +1477,16 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
                     <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="${g}" class="rounded bg-snck-dark border-snck-border text-blue-500"> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
                     <input type="number" id="arret-duree-${g}" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
                 </div>`).join('');
+            document.getElementById('arrets-exc-container').innerHTML = L.ordre.slice(1, -1).map(g => `
+                <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-exc" value="${g}" class="rounded bg-snck-dark border-snck-border text-rose-500"> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
+                    <input type="number" id="arret-exc-duree-${g}" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                </div>`).join('');
             updateVoiesOptions();
         }
 
         function updateVoiesOptions() {
+            if (document.getElementById('sillon-ligne').value === 'trans') return;
             const ligneOrdre = ligneDe({ ligne: document.getElementById('sillon-ligne').value }).ordre;
             const origine = document.getElementById('sillon-origine').value;
             const terminus = document.getElementById('sillon-terminus').value;
@@ -1291,7 +1501,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
                 const i = ligneOrdre.indexOf(g);
                 document.getElementById('cv-pav-' + g).style.display = (estPavillon && i >= lo && i <= hi) ? 'block' : 'none';
             });
-            document.querySelectorAll('input[name="arret-inter"]').forEach(cb => {
+            document.querySelectorAll('input[name="arret-inter"], input[name="arret-exc"]').forEach(cb => {
                 const i = ligneOrdre.indexOf(cb.value), ok = i > lo && i < hi;
                 cb.disabled = !ok; if (!ok) cb.checked = false;
                 cb.closest('div.flex').classList.toggle('opacity-40', !ok);
@@ -1340,6 +1550,24 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             const voieVille = document.getElementById('voie-ville').value;
             const ligne = document.getElementById('sillon-ligne').value;
             const ligneOrdre = ligneDe({ ligne }).ordre;
+            if (ligne === 'trans') {
+                const res = construireSegmentsTrans();
+                if (res.erreur) { alert(res.erreur); return; }
+                if (sillonsState.some(x => String(x.numero).toLowerCase() === numero.toLowerCase() && x.dateBrute === dateBrute)) { alert('Un sillon avec ce numéro existe déjà à cette date.'); return; }
+                const segs = res.segments;
+                sillonsState.push({
+                    id: uuid(), numero, ligne: 'trans', dateBrute, dateJJMM, depart, composition,
+                    origine: segs[0].origine, terminus: segs[segs.length - 1].terminus, voieFontaine: '', voieVille: '', voies: {},
+                    segments: segs, exceptionnels: res.exceptionnels, arretsInter: [], arretsDurees: {}, statut: 'Libre', retard: 0, retardManuel: 0, isStarted: false, motifRetard: ''
+                });
+                sauvegarderStorage();
+                document.getElementById('form-sillon').reset();
+                document.getElementById('sillon-ligne').value = 'trans';
+                transSegs = [];
+                changerLigne();
+                renderSillons();
+                return;
+            }
             if (origine === terminus) { alert("L'origine et le terminus doivent être différents."); return; }
             if (sillonsState.some(x => String(x.numero).toLowerCase() === numero.toLowerCase() && x.dateBrute === dateBrute)) { alert('Un sillon avec ce numéro existe déjà à cette date.'); return; }
             const iO = ligneOrdre.indexOf(origine), iT = ligneOrdre.indexOf(terminus), lo = Math.min(iO, iT), hi = Math.max(iO, iT);
@@ -1353,6 +1581,12 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
                 arretsDurees[cb.value] = parseInt(document.getElementById(`arret-duree-${cb.value}`).value) || 0;
             });
 
+            const exceptionnels = {};
+            document.querySelectorAll('input[name="arret-exc"]:checked').forEach(cb => {
+                const i = ligneOrdre.indexOf(cb.value); if (i <= lo || i >= hi || arretsInter.includes(cb.value)) return;
+                exceptionnels[cb.value] = parseInt(document.getElementById(`arret-exc-duree-${cb.value}`).value) || 0;
+            });
+
             const voies = {};
             if (ligne === 'pavillon') {
                 Object.keys(VOIES_PAVILLON).forEach(g => {
@@ -1363,7 +1597,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
 
             sillonsState.push({
                 id: uuid(), numero, ligne, dateBrute, dateJJMM, depart, composition, origine, terminus, voieFontaine, voieVille, voies,
-                arretsInter, arretsDurees, statut: 'Libre', retard: 0, retardManuel: 0, isStarted: false, motifRetard: ''
+                arretsInter, arretsDurees, exceptionnels, statut: 'Libre', retard: 0, retardManuel: 0, isStarted: false, motifRetard: ''
             });
 
             sauvegarderStorage();
@@ -1383,7 +1617,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             }
             container.innerHTML = '';
             sillonsState.forEach((sillon, index) => {
-                let parcours = `${sillon.origine} ➔ ${sillon.arretsInter.length ? sillon.arretsInter.join(' ➔ ') + ' ➔ ' : ''}${sillon.terminus}`;
+                let parcours = parcoursTexte(sillon);
                 container.innerHTML += `
                     <div class="bg-snck-card border border-snck-border rounded-2xl p-5 flex justify-between items-center">
                         <div class="space-y-1 text-sm">
@@ -1394,7 +1628,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
                                 <span class="ml-3 px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${escapeHtml(sillon.statut)}</span>
                             </div>
                             <div class="text-xs text-gray-400">Composition : ${escapeHtml(sillon.composition)}</div>
-                            <div class="text-xs text-gray-400">Ligne : ${escapeHtml(ligneDe(sillon).nom)}</div>
+                            <div class="text-xs text-gray-400">Ligne : ${escapeHtml(nomLigneDe(sillon))}</div>
                             <div class="text-xs text-gray-400">Parcours : ${escapeHtml(parcours)}</div>
                         </div>
                         <button onclick="deleteSillon(${index})" class="px-3 py-1.5 bg-red-500/10 text-red-400 text-xs rounded-lg cursor-pointer hover:bg-red-500/20">Supprimer</button>
@@ -1412,7 +1646,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
             sillonsState.forEach((sillon, index) => {
                 let isOccuped = (sillon.statut === 'En Service');
                 let isSupprime = (sillon.statut === 'Supprimé' || sillon.serviceSupprime);
-                let parcours = `${sillon.origine} ➔ ${sillon.arretsInter.length ? sillon.arretsInter.join(' ➔ ') + ' ➔ ' : ''}${sillon.terminus}`;
+                let parcours = parcoursTexte(sillon);
 
                 let badgeStatut = '';
                 let opacityClass = '';
@@ -1474,7 +1708,7 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
 
         function determinerVoieGare(gare, sillon) {
             if (gare === '*Stockage' || gare === '*Dépot') return '';
-            if (sillon.ligne === 'pavillon') return (sillon.voies && sillon.voies[gare]) || '';
+            if (sillon.ligne === 'pavillon') return (sillon.voies && sillon.voies[gare]) || (VOIES_PAVILLON[gare] ? VOIES_PAVILLON[gare][0] : '');
             if (gare === 'Fontaine') return sillon.voieFontaine || 'Voie A';
             if (gare === 'Ville') return sillon.voieVille || 'Voie A';
             return (ligneOrdre.indexOf(sillon.terminus) > ligneOrdre.indexOf(sillon.origine)) ? 'Voie A' : 'Voie B';
@@ -1483,15 +1717,23 @@ window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefaul
 // ====== Retards par gare + perturbations en cabine ======
 // s.retardsGares = { "Mairie": { min: -7, motif: "..." }, ... } : écart (en min) valable à partir de cette gare
 // jusqu'à la prochaine gare renseignée. Sans retardsGares, l'ancien système (retardAuto + retardManuel) s'applique.
-function routeDe(s) {
-    const o = ligneDe(s).ordre, a = o.indexOf(s.origine), b = o.indexOf(s.terminus);
+function routeSeg(g) {
+    const o = ligneDe(g).ordre, a = o.indexOf(g.origine), b = o.indexOf(g.terminus);
     if (a < 0 || b < 0) return [];
     return b >= a ? o.slice(a, b + 1) : o.slice(b, a + 1).reverse();
 }
-function garesDesservies(s) {
-    const r = routeDe(s);
-    return r.filter((g, i) => i === 0 || i === r.length - 1 || (s.arretsInter || []).includes(g));
+function garesDesserviesSeg(g) {
+    const r = routeSeg(g);
+    return r.filter((x, i) => i === 0 || i === r.length - 1 || (g.arretsInter || []).includes(x));
 }
+// Les gares de correspondance (fin d'un tronçon = début du suivant) ne sont comptées qu'une fois
+function concatSansDoublon(listes) {
+    const out = [];
+    listes.forEach(l => l.forEach(x => { if (out[out.length - 1] !== x) out.push(x); }));
+    return out;
+}
+function routeDe(s) { return concatSansDoublon(troncons(s).map(routeSeg)); }
+function garesDesservies(s) { return concatSansDoublon(troncons(s).map(garesDesserviesSeg)); }
 function aRetardsGares(s) { return !!(s && s.retardsGares && Object.keys(s.retardsGares).length); }
 function retardAutoDe(s) {
     return s.retardAuto !== undefined ? s.retardAuto : Math.max(0, (s.retard || 0) - (s.retardManuel || 0));
@@ -1527,6 +1769,7 @@ const SECTIONS_PERTURBATION = {
 function perturbationConcerne(p, s) {
     const sec = SECTIONS_PERTURBATION[p.ligne];
     if (!sec) return true; // « Toute la ligne »
+    if (s.ligne === 'trans') return troncons(s).some(g => perturbationConcerne(p, g));
     const route = routeDe(s);
     if (s.ligne === 'pavillon') return route.includes(sec[0]) && route.includes(sec[1]);
     const o = LIGNES.fontaine.ordre, idx = route.map(g => o.indexOf(g)).filter(i => i >= 0);
@@ -1562,119 +1805,107 @@ function renderPerturbationsCab(sillon) {
     });
 }
 
+function etapeHtml(e, sillon, tel, c) {
+    const gare = e.gare, voie = e.voie;
+    const isDecale = e.timeReel !== e.timeTheo;
+    const arretTxt = e.attente ? `${e.attente} min de correspondance` : (e.arretMin ? `${e.arretMin} min d'arrêt` : '');
+    const excTag = e.exc ? `<span class="text-[11px] text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 ml-2">Arrêt exceptionnel</span>` : '';
+    const retG = retardA(sillon, gare), motifG = motifRetardA(sillon, gare);
+    const tagRetard = retG !== 0
+        ? `<div class="text-[11px] font-semibold ${retG > 0 ? 'text-amber-400' : 'text-blue-400'} mt-1">${retG > 0 ? 'Retard' : 'Avance'} ${fmtEcart(retG)}${motifG ? ' · ' + escapeHtml(motifG) : ''}</div>` : '';
+    if (tel) {
+        return `
+            <div class="grid grid-cols-[55px_24px_1fr] items-start gap-2 relative">
+                <div class="bg-${c}-500/20 text-${c}-300 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded text-center border border-${c}-400/30">${e.timeReel}</div>
+                <div class="flex flex-col items-center h-full relative"><div class="w-3.5 h-3.5 rounded-full bg-[#0B0E17] border-2 border-${c}-400 z-10 my-0.5"></div><div class="w-0.5 bg-${c}-500/40 flex-1 my-1"></div></div>
+                <div class="pb-3"><h4 class="font-extrabold text-base text-white">${escapeHtml(gare)}</h4>${voie ? `<div class="text-xs text-${c}-300">${escapeHtml(voie)}</div>`:''}${arretTxt ? `<div class="text-[11px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded inline-block mt-1 border border-amber-500/20">${escapeHtml(arretTxt)}</div>`:''}${e.exc ? `<div class="text-[11px] text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded inline-block mt-1 ml-1 border border-rose-500/20">Arrêt exceptionnel</div>` : ''}${tagRetard}</div>
+            </div>`;
+    }
+    const affichageHoraire = isDecale
+        ? `<span class="line-through text-gray-500 text-xs mr-2">${e.timeTheo}</span><span class="text-amber-400 font-bold">${e.timeReel}</span>`
+        : `<span class="text-emerald-400 font-bold">${e.timeReel}</span>`;
+    return `
+        <div class="relative flex items-center justify-between">
+            <div class="absolute -left-[31px] w-4 h-4 rounded-full bg-${c}-500 border-2 border-snck-card"></div>
+            <div>
+                <span class="font-bold text-base">${escapeHtml(gare)}</span>
+                <div class="text-xs text-gray-400">${escapeHtml(voie)} ${arretTxt ? `<span class="text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 ml-2">${escapeHtml(arretTxt)}</span>` : ''}${excTag}</div>
+                ${tagRetard}
+            </div>
+            <div class="text-right font-mono text-sm">${affichageHoraire}</div>
+        </div>`;
+}
+
 function calculerHorairesParcours() {
     if (activeSillonIndex === null) return [];
     const sillon = sillonsState[activeSillonIndex];
-    let [h, m] = sillon.depart.split(':').map(Number);
-    let totalMin = h * 60 + m;
-    
-    const ligneOrdre = ligneDe(sillon).ordre, tempsTrajetSecondes = ligneDe(sillon).temps;
-    let idxOrigine = ligneOrdre.indexOf(sillon.origine);
-    let idxTerminus = ligneOrdre.indexOf(sillon.terminus);
+    const [h, m] = sillon.depart.split(':').map(Number);
+    const baseSec = (h * 60 + m) * 60;
+    const fmt = t => `${String(Math.floor(t / 3600) % 24).padStart(2, '0')}:${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}`;
+    const segs = troncons(sillon);
 
-    // --- CORRECTION SENS INVERSE ---
-    // Si on va "à reculons" (ex: Ville vers *Dépot), on inverse le tableau de gares
-    let direction = idxTerminus > idxOrigine ? 1 : -1;
-    let sousLigne;
-    
-    if (direction === 1) {
-        // Sens normal (Fontaine -> Ville)
-        sousLigne = ligneOrdre.slice(idxOrigine, idxTerminus + 1);
-    } else {
-        // Sens inverse (Ville -> Fontaine) : on prend le slice et on inverse l'ordre
-        sousLigne = ligneOrdre.slice(idxTerminus, idxOrigine + 1).reverse();
-    }
-    // -------------------------------
-
-    let horairesTheoriques = [];
-    let horairesReels = [];
-    let secTheoriques = 0;
-    let secReelles = 0;
-    let decalageSec = (sillon.retard || 0) * 60;
-
-    sousLigne.forEach((gare, idx) => {
-        if (idx > 0) {
-            let prevGare = sousLigne[idx - 1];
-            
-            // --- CORRECTION CLÉS DE TEMPS ---
-            // On adapte la clé selon le sens pour trouver le bon temps de trajet
-            let trajetKey = direction === 1 
-                ? `${prevGare}->${gare}` 
-                : `${gare}->${prevGare}`; // Inverse la clé si sens retour
-            
-            let trajetSec = tempsTrajetSecondes[trajetKey] || 0; // Si la clé n'existe pas, c'est 0 (tu devras ajouter les clés inversées dans ton objet tempsTrajetSecondes)
-            
-            secTheoriques += trajetSec;
-            secReelles += trajetSec;
-            
-            if (sillon.arretsInter.includes(prevGare)) {
-                let arretSec = (sillon.arretsDurees[prevGare] || 0) * 60;
-                secTheoriques += arretSec;
-                secReelles += arretSec;
+    // Étapes desservies, tronçon par tronçon (un sillon Trans-Lignes en a plusieurs)
+    let sec = 0;
+    const etapes = [];
+    segs.forEach((seg, si) => {
+        const L = ligneDe(seg), ordre = L.ordre, temps = L.temps;
+        const iO = ordre.indexOf(seg.origine), iT = ordre.indexOf(seg.terminus);
+        const direction = iT > iO ? 1 : -1; // sens inverse (ex : Ville -> *Dépot) : on retourne la liste de gares
+        const sous = direction === 1 ? ordre.slice(iO, iT + 1) : ordre.slice(iT, iO + 1).reverse();
+        const inter = seg.arretsInter || [], durees = seg.arretsDurees || {};
+        sous.forEach((gare, idx) => {
+            let attente = 0;
+            if (idx > 0) {
+                const prev = sous[idx - 1];
+                sec += temps[direction === 1 ? `${prev}->${gare}` : `${gare}->${prev}`] || 0;
+                if (inter.includes(prev)) sec += (durees[prev] || 0) * 60;
+            } else if (si > 0) {
+                attente = Number(seg.attenteOrigine) || 0; // correspondance à la gare de changement de ligne
+                sec += attente * 60;
             }
-        }
-        
-        let totalSecTheo = (totalMin * 60) + secTheoriques;
-        let totalSecReel = (totalMin * 60) + secReelles + retardA(sillon, gare) * 60;
-
-        // Format HH:MM (sans secondes)
-        horairesTheoriques.push(`${String(Math.floor(totalSecTheo/3600)%24).padStart(2,'0')}:${String(Math.floor((totalSecTheo%3600)/60)).padStart(2,'0')}`);
-        horairesReels.push(`${String(Math.floor(totalSecReel/3600)%24).padStart(2,'0')}:${String(Math.floor((totalSecReel%3600)/60)).padStart(2,'0')}`);
+            const isOT = idx === 0 || idx === sous.length - 1;
+            if (!(isOT || inter.includes(gare))) return;
+            etapes.push({
+                si, gare, isOT, attente, exc: !isOT && !!(sillon.exceptionnels && sillon.exceptionnels[gare] !== undefined),
+                voie: determinerVoieGare(gare, seg),
+                arretMin: (!isOT && durees[gare]) ? durees[gare] : 0,
+                timeTheo: fmt(baseSec + sec),
+                timeReel: fmt(baseSec + sec + retardA(sillon, gare) * 60)
+            });
+        });
     });
 
-    heureArriveeFinaleReelle = horairesReels[horairesReels.length - 1];
-    heureArriveeFinaleTs = departTs(sillon) + (secReelles + retardA(sillon, sillon.terminus) * 60) * 1000;
-    
+    heureArriveeFinaleReelle = etapes[etapes.length - 1].timeReel;
+    heureArriveeFinaleTs = departTs(sillon) + (sec + retardA(sillon, sillon.terminus) * 60) * 1000;
+
     if (currentPlatform !== 'tel') {
-        let [hD, mD] = sillon.depart.split(':').map(Number);
-        let depSec = (hD * 60 + mD) * 60 + retardA(sillon, sillon.origine) * 60;
-        let depReel = `${String(Math.floor(depSec/3600)%24).padStart(2,'0')}:${String(Math.floor((depSec%3600)/60)).padStart(2,'0')}`;
-        document.getElementById('pc-cabine-horaires').innerText = `${depReel} ➔ ${heureArriveeFinaleReelle}`;
+        const depSec = baseSec + retardA(sillon, sillon.origine) * 60;
+        document.getElementById('pc-cabine-horaires').innerText = `${fmt(depSec)} ➔ ${heureArriveeFinaleReelle}`;
     }
 
-    const container = document.getElementById(currentPlatform === 'tel' ? 'tel-cabine-parcours-list' : 'pc-cabine-parcours-list');
-    container.innerHTML = '';
-
-    sousLigne.forEach((gare, idx) => {
-        let isOrigineTerminus = (idx === 0 || idx === sousLigne.length - 1);
-        let isDesservi = isOrigineTerminus || sillon.arretsInter.includes(gare);
-        if (!isDesservi) return;
-
-        let voie = determinerVoieGare(gare, sillon);
-        let arretTxt = (!isOrigineTerminus && sillon.arretsDurees[gare]) ? `${escapeHtml(sillon.arretsDurees[gare])} min d'arrêt` : '';
-        let timeTheo = horairesTheoriques[idx];
-        let timeReel = horairesReels[idx];
-        let isDecale = (timeReel !== timeTheo);
-        const retG = retardA(sillon, gare), motifG = motifRetardA(sillon, gare);
-        const tagRetard = retG !== 0
-            ? `<div class="text-[11px] font-semibold ${retG > 0 ? 'text-amber-400' : 'text-blue-400'} mt-1">${retG > 0 ? 'Retard' : 'Avance'} ${fmtEcart(retG)}${motifG ? ' · ' + escapeHtml(motifG) : ''}</div>` : '';
-
-        if (currentPlatform === 'tel') {
-            container.innerHTML += `
-                <div class="grid grid-cols-[55px_24px_1fr] items-start gap-2 relative">
-                    <div class="bg-indigo-500/20 text-indigo-300 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded text-center border border-indigo-400/30">${timeReel}</div>
-                    <div class="flex flex-col items-center h-full relative"><div class="w-3.5 h-3.5 rounded-full bg-[#0B0E17] border-2 border-indigo-400 z-10 my-0.5"></div><div class="w-0.5 bg-indigo-500/40 flex-1 my-1"></div></div>
-                    <div class="pb-3"><h4 class="font-extrabold text-base text-white">${escapeHtml(gare)}</h4>${voie ? `<div class="text-xs text-indigo-300">${escapeHtml(voie)}</div>`:''}${arretTxt ? `<div class="text-[11px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded inline-block mt-1 border border-amber-500/20">${escapeHtml(arretTxt)}</div>`:''}${tagRetard}</div>
-                </div>`;
-        } else {
-            let affichageHoraire = isDecale 
-                ? `<span class="line-through text-gray-500 text-xs mr-2">${timeTheo}</span><span class="text-amber-400 font-bold">${timeReel}</span>`
-                : `<span class="text-emerald-400 font-bold">${timeReel}</span>`;
-
-            container.innerHTML += `
-                <div class="relative flex items-center justify-between">
-                    <div class="absolute -left-[31px] w-4 h-4 rounded-full bg-emerald-500 border-2 border-snck-card"></div>
-                    <div>
-                        <span class="font-bold text-base">${escapeHtml(gare)}</span>
-                        <div class="text-xs text-gray-400">${escapeHtml(voie)} ${arretTxt ? `<span class="text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 ml-2">${escapeHtml(arretTxt)}</span>` : ''}</div>
-                        ${tagRetard}
-                    </div>
-                    <div class="text-right font-mono text-sm">${affichageHoraire}</div>
-                </div>`;
-        }
-    });
+    const tel = currentPlatform === 'tel';
+    const container = document.getElementById(tel ? 'tel-cabine-parcours-list' : 'pc-cabine-parcours-list');
+    if (sillon.ligne !== 'trans') {
+        container.className = tel ? 'space-y-6' : 'relative pl-6 space-y-6 border-l-2 border-emerald-500/40 ml-4';
+        container.innerHTML = etapes.map(e => etapeHtml(e, sillon, tel, tel ? 'indigo' : 'emerald')).join('');
+    } else {
+        // Trans-Lignes : une ligne (bloc) par tronçon, avec ses arrêts, les unes sous les autres
+        container.className = 'space-y-5';
+        container.innerHTML = segs.map((seg, si) => {
+            const c = COULEUR_LIGNE[seg.ligne] || 'blue';
+            const items = etapes.filter(e => e.si === si).map(e => etapeHtml(e, sillon, tel, c)).join('');
+            const corr = si > 0 ? `<div class="text-[11px] font-semibold text-amber-400 mb-3"><i class="fa-solid fa-right-left mr-1"></i> Correspondance à ${escapeHtml(seg.origine)}</div>` : '';
+            return `<div>${corr}
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    <span class="px-2.5 py-1 rounded-lg bg-${c}-500/15 text-${c}-300 border border-${c}-500/30 text-xs font-bold"><i class="fa-solid fa-train-subway mr-1"></i> ${escapeHtml(ligneDe(seg).nom)}</span>
+                    <span class="text-[11px] text-gray-400">${escapeHtml(garesDesserviesSeg(seg).join(' ➔ '))}</span>
+                </div>
+                <div class="${tel ? 'space-y-6' : `relative pl-6 space-y-6 border-l-2 border-${c}-500/40 ml-4`}">${items}</div>
+            </div>`;
+        }).join('');
+    }
     renderPerturbationsCab(sillon);
-    return horairesReels;
+    return etapes.map(e => e.timeReel);
 }
         function calculerRetardAutomatique(index) {
             const s = sillonsState[index];
@@ -1762,6 +1993,33 @@ function calculerHorairesParcours() {
             if (!heureArriveeFinaleTs || serviceAtteintTerminus || Date.now() < heureArriveeFinaleTs) return;
             serviceAtteintTerminus = true;
             setFinEtat(true);
+        }
+
+        function openArretExcModal() {
+            const s = getActif(); if (!s) return;
+            const elig = eligiblesExc(s), exc = s.exceptionnels || {};
+            document.getElementById('arret-exc-liste').innerHTML = elig.length ? elig.map(g => {
+                const on = exc[g] !== undefined;
+                return `<div class="exc-gare-row flex items-center justify-between bg-snck-dark border border-snck-border rounded-xl p-3" data-gare="${escapeHtml(g)}">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="exc-gare-on rounded bg-snck-dark border-snck-border text-rose-500" ${on ? 'checked' : ''}> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
+                    <span class="flex items-center gap-1 text-xs text-gray-400"><input type="number" min="0" class="exc-gare-duree w-16 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center" value="${on ? exc[g] : 1}"> min</span>
+                </div>`;
+            }).join('') : '<div class="text-sm text-gray-400 text-center py-4">Aucune gare disponible pour un arrêt exceptionnel sur ce parcours.</div>';
+            document.getElementById('modal-arret-exc').classList.remove('hidden');
+        }
+        function closeArretExcModal() { document.getElementById('modal-arret-exc').classList.add('hidden'); }
+        function handleArretExc(e) {
+            e.preventDefault();
+            const s = getActif(); if (!s) return;
+            const exc = {};
+            document.querySelectorAll('.exc-gare-row').forEach(row => {
+                if (row.querySelector('.exc-gare-on').checked) exc[row.dataset.gare] = Math.max(0, parseInt(row.querySelector('.exc-gare-duree').value, 10) || 0);
+            });
+            s.exceptionnels = exc;
+            sauvegarderStorage(true);
+            closeArretExcModal();
+            mettreAJourAffichageRetard();
+            calculerHorairesParcours();
         }
 
         function openRetardModal() {
@@ -1993,16 +2251,19 @@ function calculerHorairesParcours() {
             d.setHours(h, m, 0, 0);
             return d.getTime();
         }
-        function dureeSec(s) {
-            const ligneOrdre = ligneDe(s).ordre, tempsTrajetSecondes = ligneDe(s).temps;
-            const a = ligneOrdre.indexOf(s.origine), b = ligneOrdre.indexOf(s.terminus), dir = b > a ? 1 : -1;
-            const g = dir > 0 ? ligneOrdre.slice(a, b + 1) : ligneOrdre.slice(b, a + 1).reverse();
+        function dureeSegSec(g) {
+            const ligneOrdre = ligneDe(g).ordre, tempsTrajetSecondes = ligneDe(g).temps;
+            const a = ligneOrdre.indexOf(g.origine), b = ligneOrdre.indexOf(g.terminus), dir = b > a ? 1 : -1;
+            const gares = dir > 0 ? ligneOrdre.slice(a, b + 1) : ligneOrdre.slice(b, a + 1).reverse();
             let t = 0;
-            for (let i = 1; i < g.length; i++) {
-                t += tempsTrajetSecondes[dir > 0 ? `${g[i-1]}->${g[i]}` : `${g[i]}->${g[i-1]}`] || 0;
-                if ((s.arretsInter || []).includes(g[i-1])) t += ((s.arretsDurees || {})[g[i-1]] || 0) * 60;
+            for (let i = 1; i < gares.length; i++) {
+                t += tempsTrajetSecondes[dir > 0 ? `${gares[i-1]}->${gares[i]}` : `${gares[i]}->${gares[i-1]}`] || 0;
+                if ((g.arretsInter || []).includes(gares[i-1])) t += ((g.arretsDurees || {})[gares[i-1]] || 0) * 60;
             }
             return t;
+        }
+        function dureeSec(s) {
+            return troncons(s).reduce((t, g, i) => t + dureeSegSec(g) + (i > 0 ? (Number(g.attenteOrigine) || 0) * 60 : 0), 0);
         }
         function setFinEtat(on) {
             document.querySelectorAll('#pc-btn-fin-service, #tel-btn-b3').forEach(b => {

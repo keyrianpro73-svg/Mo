@@ -1,0 +1,2652 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNCK - SIRIUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        snck: {
+                            dark: '#0B0F19',
+                            card: '#111827',
+                            border: '#1F2937',
+                            primary: '#3B82F6',
+                            accent: '#10B981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&display=swap">
+    <style>
+        /* Menu de conduite « Suivi train » (mobile : .sv-tel / PC : .sv-pc) */
+        .sv{--gold:#e8c468;--cream:#f2e8c4;--line:rgba(242,232,196,.13);--muted:#aab3c4;font-family:'Roboto Condensed','Arial Narrow',Arial,sans-serif;color:var(--cream);background:linear-gradient(#232e41,#192130);height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;width:100%}
+        .sv-tel{--cols:30px minmax(0,1fr) 58px 58px 80px;--bcols:1fr;--pmax:86px;font-size:15px;max-width:540px;margin:0 auto}
+        .sv-pc{--cols:48px minmax(0,1fr) 140px 140px 180px;--bcols:repeat(4,1fr);--pmax:130px;font-size:18px}
+        .sv-top{display:flex;align-items:center;gap:12px;padding:14px 16px 10px;flex:none}
+        .sv-back{flex:none;width:38px;height:38px;border-radius:10px;border:1px solid #46546b;background:#2a364b;color:var(--cream);align-items:center;justify-content:center;cursor:pointer;display:flex}
+        .sv-ico{font-size:2.3em;color:var(--gold);line-height:1;flex:none}
+        .sv-title{font-size:1.9em;line-height:1;letter-spacing:.02em;display:flex;flex-wrap:wrap;align-items:baseline;gap:.4em}
+        .sv-title span{font-size:.55em;color:var(--gold);font-family:ui-monospace,monospace}
+        .sv-sub{color:var(--gold);font-size:1.05em;line-height:1.2}
+        .sv-heure{margin-left:auto;align-self:flex-start;color:var(--gold);font-variant-numeric:tabular-nums;font-size:1.05em}
+        .sv-bar{height:7px;background:var(--gold);flex:none}
+        .sv-info{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:6px 16px;font-size:.8em;color:var(--muted);flex:none}
+        .sv-head,.sv-row{display:grid;grid-template-columns:var(--cols);align-items:center}
+        .sv-head{padding:6px 0;font-size:1.15em;border-bottom:1px solid var(--line);flex:none}
+        .sv-head span:nth-child(n+3){text-align:center}
+        .sv-scroll{flex:1;overflow-y:auto;min-height:0;padding-bottom:6px}
+        .sv-list{display:block}
+        .sv-row{min-height:3.4em;border-bottom:1px solid var(--line);font-size:1.2em}
+        .sv-r-cur{background:#b3661c}
+        .sv-gare{padding:6px 8px 6px 4px;min-width:0}
+        .sv-gare b{font-weight:400;overflow-wrap:anywhere}
+        .sv-gare small{display:block;font-size:.62em;color:var(--muted);line-height:1.3}
+        .sv-r-cur .sv-gare small{color:#ffe6c4}
+        .sv-tag{display:inline-block;padding:0 6px;border-radius:4px;border:1px solid;margin-left:4px;font-size:.95em}
+        .sv-tag-rose{color:#fb7185;border-color:#fb718555;background:#fb718522}
+        .sv-tag-red{color:#f87171;border-color:#f8717155;background:#f8717122}
+        .sv-t{text-align:center;font-size:.92em;font-variant-numeric:tabular-nums}
+        .sv-t s{display:block;font-size:.65em;color:#8f98aa}
+        .sv-etat{align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:.78em;text-align:center;padding:0 4px}
+        .sv-ok{background:#3da45a;color:#eaffee}.sv-red{background:#a83a3a;color:#fff}.sv-late{color:#f3b256}.sv-cur{color:#fff}
+        .sv-tl{position:relative;align-self:stretch;display:flex;align-items:center;justify-content:center}
+        .sv-tl::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:rgba(217,197,143,.4)}
+        .sv-row:first-child .sv-tl::before{top:50%}.sv-row:last-child .sv-tl::before{bottom:50%}
+        .sv-dot{position:relative;width:.7em;height:.7em;border-radius:50%;background:#5a6272;z-index:1}
+        .sv-d-ok{background:#d9c58f}.sv-d-cur{background:#f0932b;box-shadow:0 0 0 3px rgba(240,147,43,.3)}
+        .sv-d-big{width:1.1em;height:1.1em;border:3px solid #d9c58f;background:#2a3446}
+        .sv-bottom{flex:none;padding:8px 14px 12px;background:rgba(0,0,0,.14);border-top:1px solid var(--line)}
+        .sv-pc .sv-bottom{padding-bottom:46px}
+        .sv-pert-t{font-size:1.15em;margin:2px 0 4px}
+        .sv-pert{border:1px solid #3d4a60;background:#2c384c;border-radius:10px;padding:8px 10px;max-height:var(--pmax);overflow-y:auto;font-size:.82em;color:#8b95a8}
+        .sv-btns{display:grid;gap:8px;margin-top:10px;grid-template-columns:var(--bcols)}
+        .sv-btns2{grid-template-columns:1fr 1fr;margin-top:8px}
+        .sv-btn{border:1px solid #46546b;background:linear-gradient(#34425a,#26324a);color:var(--cream);border-radius:8px;padding:.6em .5em;font-size:1.1em;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4em;text-align:center}
+        .sv-btn:hover:not(:disabled){filter:brightness(1.15)}
+        .sv-btn:disabled{opacity:.45;cursor:not-allowed}
+        .sv-sm{font-size:.9em;padding:.45em .4em}
+        .sv-go{background:linear-gradient(#3da45a,#2d7f45);border-color:#4cbf6c;color:#fff}
+        .sv-run{background:linear-gradient(#3b78d1,#2b5aa3);border-color:#5b95e6;color:#fff}
+        .sv-end:not(:disabled){background:linear-gradient(#3b78d1,#2b5aa3);border-color:#5b95e6;color:#fff}
+        .sv-del{color:#fca5a5;border-color:#7f3a3a}
+        @media (max-width:380px){.sv-tel{--cols:26px minmax(0,1fr) 50px 50px 68px;font-size:13.5px}}
+        @media (max-width:900px){.sv-pc{--cols:36px minmax(0,1fr) 90px 90px 120px;--bcols:repeat(2,1fr);font-size:15px}}
+        @media (max-height:560px){.sv-pert{max-height:60px}}
+    </style>
+</head>
+<body class="bg-snck-dark text-gray-100 min-h-screen font-sans selection:bg-blue-500 selection:text-white">
+
+    <div id="app" class="min-h-screen flex flex-col">
+
+        <!-- 0. ÉCRAN DE CONNEXION / COMPTE -->
+        <div id="screen-auth" class="app-screen flex-1 flex items-center justify-center p-6">
+            <div class="max-w-md w-full bg-snck-card border border-snck-border rounded-3xl p-8 shadow-2xl space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
+                        <i class="fa-solid fa-train-subway"></i> SNCK — Système SIRIUS
+                    </div>
+                    <h1 class="text-2xl font-bold">Connexion Conducteur</h1>
+                    <p class="text-gray-400 text-xs">Veuillez vous identifier pour accéder au réseau</p>
+                </div>
+
+                <form onsubmit="handleAuth(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Identifiant / Nom de conducteur</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400"><i class="fa-solid fa-user"></i></span>
+                            <input type="text" id="auth-username" required placeholder="ex: Keke73" class="w-full bg-snck-dark border border-snck-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Mot de passe de service</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400"><i class="fa-solid fa-lock"></i></span>
+                            <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-snck-dark border border-snck-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/20 cursor-pointer">
+                        Se connecter au réseau <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </form>
+                <p class="text-[11px] text-gray-500 text-center">Premier lancement : le mot de passe saisi pour <b>Keke73</b> devient celui de l'administrateur.</p>
+                <div class="flex justify-center gap-4 text-[11px] text-gray-500">
+                    <button type="button" onclick="creerEspaceCloud()" class="hover:text-gray-300 cursor-pointer"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Activer la synchro en ligne</button>
+                    <button type="button" onclick="configurerCloud()" class="hover:text-gray-300 cursor-pointer"><i class="fa-solid fa-link mr-1"></i>Rejoindre un espace</button>
+                </div>
+                <p class="text-[11px] text-gray-600 text-center">Synchro : <span id="cloud-cfg-label">…</span></p>
+            </div>
+        </div>
+
+        <!-- 1. ÉCRAN DE SÉLECTION INITIAL -->
+        <div id="screen-selection" class="app-screen hidden flex-1 flex items-center justify-center p-6">
+            <div class="max-w-4xl w-full text-center space-y-8">
+                <div class="flex justify-between items-center bg-snck-card border border-snck-border px-6 py-3 rounded-2xl">
+                    <div class="text-left">
+                        <span class="text-xs text-gray-400">Connecté en tant que :</span>
+                        <div id="current-user-display" class="font-bold text-blue-400 text-sm">--</div>
+                    </div>
+                    <button onclick="deconnecterCompte()" class="px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs hover:bg-red-500/20 cursor-pointer">
+                        <i class="fa-solid fa-power-off mr-1"></i> Déconnexion
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
+                        <i class="fa-solid fa-train-subway"></i> SNCK — Système SIRIUS
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">Sélectionnez votre mode</h1>
+                    <p class="text-gray-400 max-w-lg mx-auto">Choisissez la version adaptée à votre poste de travail ou gérez vos accès.</p>
+                </div>
+
+                <div id="modes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <button id="btn-mode-tel" onclick="switchScreen('screen-tel-menu')" class="group relative bg-snck-card border border-snck-border hover:border-blue-500/50 p-8 rounded-2xl text-left transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 cursor-pointer">
+                        <div id="tel-lock-badge" class="hidden absolute inset-0 rounded-2xl bg-snck-dark/80 backdrop-blur-sm flex items-center justify-center z-10">
+                            <div class="text-center space-y-2">
+                                <i class="fa-solid fa-lock text-3xl text-gray-400"></i>
+                                <p class="text-xs text-gray-400 font-semibold">Disponible sur mobile uniquement</p>
+                            </div>
+                        </div>
+                        <div class="absolute top-6 right-6 w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-mobile-screen-button text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">Version Téléphone</h3>
+                        <p class="text-gray-400 text-sm mb-6">Interface mobile compacte dédiée à la conduite en mobilité.</p>
+                        <span class="inline-flex items-center gap-2 text-blue-400 font-semibold text-sm">
+                            Lancer sur mobile <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </span>
+                    </button>
+
+                    <button id="btn-mode-pc" onclick="switchScreen('screen-pc-menu')" class="group relative bg-snck-card border border-snck-border hover:border-emerald-500/50 p-8 rounded-2xl text-left transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-1 cursor-pointer">
+                        <div id="pc-lock-badge" class="hidden absolute inset-0 rounded-2xl bg-snck-dark/80 backdrop-blur-sm flex items-center justify-center z-10">
+                            <div class="text-center space-y-2">
+                                <i class="fa-solid fa-lock text-3xl text-gray-400"></i>
+                                <p class="text-xs text-gray-400 font-semibold">Disponible sur PC uniquement</p>
+                            </div>
+                        </div>
+                        <div class="absolute top-6 right-6 w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-desktop text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">Version PC</h3>
+                        <p class="text-gray-400 text-sm mb-6">Poste de commandement complet : création de sillons et régulation.</p>
+                        <span class="inline-flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                            Lancer sur PC <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1.5. MENU ADMIN EXCLUSIF (CRÉATION DE COMPTES) -->
+        <div id="screen-admin-comptes" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchScreen('screen-selection')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2 text-amber-400">
+                        <i class="fa-solid fa-user-shield"></i> Administration — Gestion des Comptes
+                    </h2>
+                </div>
+            </header>
+            <div class="flex-1 p-6 max-w-4xl mx-auto w-full space-y-6">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-blue-400">
+                        <i class="fa-solid fa-user-plus"></i> Créer un nouveau compte conducteur
+                    </h3>
+                    <form onsubmit="handleCreateAccount(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Identifiant</label>
+                            <input type="text" id="new-user-id" required placeholder="ex: Conducteur_02" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Mot de passe</label>
+                            <input type="password" minlength="6" id="new-user-pwd" required placeholder="ex: 123456" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-sm text-white">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer shadow">
+                                Enregistrer le compte
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 space-y-3">
+                    <h3 class="text-xl font-bold flex items-center gap-2 text-emerald-400">
+                        <i class="fa-solid fa-cloud"></i> Synchronisation Cloud
+                    </h3>
+                    <p class="text-xs text-gray-400">Les comptes et les sillons sont sauvegardés dans ton espace en ligne et accessibles depuis n'importe quel appareil.</p>
+                    <div class="flex items-center gap-3 bg-snck-dark border border-snck-border rounded-xl p-3">
+                        <code id="cloud-bucket-id" class="text-xs font-mono text-blue-400 flex-1 truncate">—</code>
+                        <button onclick="copyBucketId()" class="px-3 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 text-xs hover:bg-blue-600/30 cursor-pointer shrink-0">
+                            <i class="fa-solid fa-copy mr-1"></i> Copier
+                        </button>
+                    </div>
+                   <p class="text-[11px] text-gray-500">Les modifications sont synchronisées toutes les 5 secondes. Connectez-vous séparément sur chaque appareil.</p>
+                </div>
+
+                <div class="bg-snck-card border border-violet-500/30 rounded-2xl p-6 space-y-3">
+                    <h3 class="text-xl font-bold flex items-center gap-2 text-violet-400">
+                        <i class="fa-solid fa-plug"></i> API — SNCK Connect (lecture)
+                    </h3>
+                    <p class="text-xs text-gray-400">Les sillons du réseau sont lisibles à cette adresse (horaires, retards, statuts). Toute personne qui connaît cette adresse peut les lire.</p>
+                    <div class="flex items-center gap-3 bg-snck-dark border border-snck-border rounded-xl p-3">
+                        <code id="api-url-sillons" class="text-xs font-mono text-violet-400 flex-1 truncate">—</code>
+                        <button onclick="copyApiUrl()" class="px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-400 text-xs hover:bg-violet-600/30 cursor-pointer shrink-0">
+                            <i class="fa-solid fa-copy mr-1"></i> Copier
+                        </button>
+                    </div>
+                    <div class="bg-snck-dark border border-snck-border rounded-xl p-3">
+                        <p class="text-[11px] text-gray-500 mb-1">Exemple après connexion sur ce site :</p>
+                        <pre id="api-example" class="text-[11px] font-mono text-gray-300 overflow-x-auto whitespace-pre-wrap">—</pre>
+                    </div>
+                    <p class="text-[11px] text-gray-500">Les mots de passe ne sont jamais stockés en clair (hash PBKDF2 salé).</p>
+                </div>
+
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 space-y-4">
+                    <h3 class="text-xl font-bold">Comptes enregistrés sur le réseau</h3>
+                    <div id="liste-comptes-container" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MENU PRINCIPAL VERSION TÉLÉPHONE -->
+        <div id="screen-tel-menu" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchScreen('screen-selection')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-mobile-screen text-blue-500"></i> SNCK SIRIUS — Mobile
+                    </h2>
+                </div>
+                <div id="tel-clock" class="text-sm font-mono bg-snck-dark px-3 py-1.5 rounded-lg border border-snck-border text-gray-300">00:00:00</div>
+            </header>
+
+            <div class="flex-1 flex items-center justify-center p-6">
+                <div class="max-w-md w-full text-center space-y-6">
+                    <h2 class="text-2xl font-extrabold">Menu Téléphone</h2>
+                    <div class="space-y-4">
+                        <button onclick="openConduireModule('tel')" class="w-full p-6 rounded-2xl bg-snck-card border border-snck-border hover:border-emerald-500 text-left transition-all hover:-translate-y-1 group cursor-pointer flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-train"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Conduire</h3>
+                                <p class="text-gray-400 text-xs">Sélectionner un sillon pour lancer la cabine mobile.</p>
+                            </div>
+                        </button>
+                        <button onclick="openParcMenu('tel')" class="w-full p-6 rounded-2xl bg-snck-card border border-snck-border hover:border-amber-500 text-left transition-all hover:-translate-y-1 group cursor-pointer flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform"><i class="fa-solid fa-warehouse"></i></div>
+                            <div><h3 class="text-lg font-bold">Gestion du parc</h3><p class="text-gray-400 text-xs">Rames, statuts et affectations.</p></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. MENU PRINCIPAL VERSION PC -->
+        <div id="screen-pc-menu" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchScreen('screen-selection')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-blue-500"></i> SNCK SIRIUS — PC
+                    </h2>
+                </div>
+                <div id="pc-clock" class="text-sm font-mono bg-snck-dark px-3 py-1.5 rounded-lg border border-snck-border text-gray-300">00:00:00</div>
+            </header>
+
+            <div class="flex-1 flex items-center justify-center p-6">
+                <div class="max-w-3xl w-full text-center space-y-8">
+                    <h2 class="text-3xl font-extrabold">Menu Principal PC</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button onclick="openHorairistePerturbations()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-blue-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Horairiste & Perturbations</h3>
+                            <p class="text-gray-400 text-sm">Gestion des horaires, sillons et signalement des perturbations réseau.</p>
+                        </button>
+
+                        <button onclick="openConduireModule('pc')" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-emerald-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-train"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Conduire</h3>
+                            <p class="text-gray-400 text-sm">Sélectionnez un sillon créé pour lancer la simulation de conduite PC.</p>
+                        </button>
+                        <button onclick="openParcMenu('pc')" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-amber-500 text-left transition-all hover:-translate-y-1 group cursor-pointer md:col-span-2">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform"><i class="fa-solid fa-warehouse"></i></div>
+                            <h3 class="text-xl font-bold mb-1">Gestion du parc</h3>
+                            <p class="text-gray-400 text-sm">Rames et matériels SNCK : statuts et affectation aux services.</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- GESTION DU PARC : MENU -->
+        <div id="screen-parc-menu" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center gap-3">
+                <button onclick="parcRetour()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Retour</button>
+                <h2 class="font-bold text-lg flex items-center gap-2"><i class="fa-solid fa-warehouse text-amber-500"></i> Gestion du parc</h2>
+            </header>
+            <div class="flex-1 flex items-center justify-center p-6">
+                <div class="max-w-3xl w-full text-center space-y-8">
+                    <h2 class="text-3xl font-extrabold">Gestion du parc</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button onclick="openParcListe()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-amber-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform"><i class="fa-solid fa-train"></i></div>
+                            <h3 class="text-xl font-bold mb-1">Liste des rames dans le parc</h3>
+                            <p class="text-gray-400 text-sm">Consulter, ajouter et gérer les matériels du parc SNCK.</p>
+                        </button>
+                        <button onclick="openParcPositions()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-amber-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform"><i class="fa-solid fa-location-dot"></i></div>
+                            <h3 class="text-xl font-bold mb-1">Position des rames</h3>
+                            <p class="text-gray-400 text-sm">Où est stationné chaque matériel, et sur quelle voie.</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GESTION DU PARC : LISTE -->
+        <div id="screen-parc-liste" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center gap-3">
+                <button onclick="switchScreen('screen-parc-menu')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Gestion du parc</button>
+                <h2 class="font-bold text-lg flex items-center gap-2"><i class="fa-solid fa-warehouse text-amber-500"></i> Liste des rames dans le parc</h2>
+            </header>
+            <div class="flex-1 p-6 max-w-5xl mx-auto w-full space-y-4">
+                <div class="flex items-center justify-between">
+                    <span id="parc-count" class="text-xs font-mono bg-snck-card border border-snck-border px-3 py-1 rounded-full text-gray-400"></span>
+                    <button id="parc-btn-ajout" onclick="ouvrirMaterielModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-xl cursor-pointer text-sm">+ En ajouter un</button>
+                </div>
+                <div id="parc-liste" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- GESTION DU PARC : POSITION DES RAMES -->
+        <div id="screen-parc-position" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center gap-3">
+                <button onclick="switchScreen('screen-parc-menu')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Gestion du parc</button>
+                <h2 class="font-bold text-lg flex items-center gap-2"><i class="fa-solid fa-location-dot text-amber-500"></i> Position des rames</h2>
+            </header>
+            <div id="pos-contenu" class="flex-1 p-6 max-w-3xl mx-auto w-full space-y-3"></div>
+        </div>
+
+        <!-- 3.5. MENU HORAIRISTE & PERTURBATIONS -->
+        <div id="screen-hp-menu" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchScreen('screen-pc-menu')" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Menu PC
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-blue-500"></i> Horairiste & Perturbations
+                    </h2>
+                </div>
+            </header>
+            <div class="flex-1 flex items-center justify-center p-6">
+                <div class="max-w-3xl w-full text-center space-y-8">
+                    <h2 class="text-3xl font-extrabold">Gestion Réseau</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button onclick="openCreateSillonModule()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-blue-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-route"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Horairiste</h3>
+                            <p class="text-gray-400 text-sm">Créer et gérer les sillons : horaires, arrêts, voies, dates et composition.</p>
+                        </button>
+                        <button onclick="openPerturbationsModule()" class="p-8 rounded-2xl bg-snck-card border border-snck-border hover:border-red-500 text-left transition-all hover:-translate-y-1 group cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center mb-4 text-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-1">Perturbations</h3>
+                            <p class="text-gray-400 text-sm">Signaler une interruption ou perturbation sur le réseau (visible sur SNCK Connect).</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3.6. MODULE PERTURBATIONS -->
+        <div id="screen-perturbations" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="openHorairistePerturbations()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2 text-red-400">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Signaler une Perturbation
+                    </h2>
+                </div>
+            </header>
+            <div class="flex-1 p-6 max-w-2xl mx-auto w-full">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 shadow-lg">
+                    <form onsubmit="handleSignalerPerturbation(event)" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Perturbation (type d'incident)</label>
+                            <input type="text" id="perturbation-nom" required placeholder="ex: Accident de personne, panne de signalisation..." class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Type</label>
+                                <select id="perturbation-type" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                                    <option value="Interruption">Interruption</option>
+                                    <option value="Perturbation">Perturbation</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Heure de Fin</label>
+                                <input type="time" id="perturbation-heure-fin" required class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Ligne concernée</label>
+                            <select id="perturbation-ligne" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                                <option value="Toute la ligne">Toute la ligne</option>
+                                <option value="Section Fontaine - Mairie">Section Fontaine - Mairie</option>
+                                <option value="Section Mairie - Hôpital">Section Mairie - Hôpital</option>
+                                <option value="Section Hôpital - Ville">Section Hôpital - Ville</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-2.5 rounded-xl cursor-pointer">
+                                <i class="fa-solid fa-bullhorn mr-2"></i> Publier la perturbation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div id="liste-perturbations" class="mt-6 space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- 4. MODULE : CRÉER DES SILLONS (PC) -->
+        <div id="screen-create-sillon" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="openHorairistePerturbations()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Horairiste & Perturbations
+                    </button>
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-route text-blue-500"></i> Module : Horairiste (Créer des sillons)
+                    </h2>
+                </div>
+            </header>
+
+            <div class="flex-1 p-6 max-w-6xl mx-auto w-full space-y-8">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-blue-500"></i> Nouveau Sillon & Prévision (JJ/MM)
+                    </h3>
+                    
+                    <form id="form-sillon" onsubmit="handleCreateSillon(event)" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">N° Sillon</label>
+                                <input type="text" id="sillon-numero" required placeholder="ex: SK-102" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Date (JJ/MM)</label>
+                                <input type="date" id="sillon-date" required class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Heure de départ</label>
+                                <input type="time" id="sillon-depart-heure" required class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Matériel</label>
+                                <select id="sillon-composition" required class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white"></select>
+                                <p id="sillon-materiel-msg" class="text-xs text-amber-400 mt-1 hidden"></p>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-snck-border pt-4 space-y-4">
+                            <label class="block text-sm font-medium text-gray-300">Itinéraire et Choix des Voies aux Terminus</label>
+
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Ligne</label>
+                                <select id="sillon-ligne" onchange="changerLigne()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                                    <option value="fontaine">Ligne Fontaine - Ville</option>
+                                    <option value="pavillon">Ligne Hôpital - Pavillon Noir (voie unique)</option>
+                                    <option value="trans">Translignes</option>
+                                </select>
+                            </div>
+                            
+                            <div id="bloc-monoligne" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Origine</label>
+                                    <select id="sillon-origine" onchange="updateVoiesOptions()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                                        <option value="Fontaine">Fontaine</option><option value="Mairie">Mairie</option><option value="Technicentre">Technicentre</option><option value="Hôpital">Hôpital</option><option value="*Stockage">*Stockage</option><option value="*Dépot">*Dépot</option><option value="Ville">Ville</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Terminus</label>
+                                    <select id="sillon-terminus" onchange="updateVoiesOptions()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                                        <option value="Fontaine">Fontaine</option><option value="Mairie">Mairie</option><option value="Technicentre">Technicentre</option><option value="Hôpital">Hôpital</option><option value="*Stockage">*Stockage</option><option value="*Dépot">*Dépot</option><option value="Ville" selected>Ville</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-snck-dark/50 p-4 rounded-xl border border-snck-border">
+                                <div id="container-voie-fontaine">
+                                    <label class="block text-xs font-semibold text-blue-400 mb-1">Voie d'arrêt à Fontaine</label>
+                                    <select id="voie-fontaine" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                        <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option><option value="Voie C">Voie C</option><option value="Voie D">Voie D</option><option value="Voie E">Voie E</option><option value="Voie F">Voie F</option><option value="Voie S1">Voie S1</option><option value="Voie S2">Voie S2</option>
+                                    </select>
+                                </div>
+                                <div id="container-voie-ville">
+                                    <label class="block text-xs font-semibold text-emerald-400 mb-1">Voie d'arrêt à Ville</label>
+                                    <select id="voie-ville" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                        <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
+                                    </select>
+                                </div>
+                                <div id="container-voies-pavillon" class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4" style="display:none">
+                                    <div id="cv-pav-Hôpital">
+                                        <label class="block text-xs font-semibold text-blue-400 mb-1">Voie d'arrêt à Hôpital</label>
+                                        <select id="voie-pav-Hôpital" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie C">Voie C</option><option value="Voie D">Voie D</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Ville">
+                                        <label class="block text-xs font-semibold text-emerald-400 mb-1">Voie d'arrêt à Ville</label>
+                                        <select id="voie-pav-Ville" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie C">Voie C</option><option value="Voie D">Voie D</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Zoo">
+                                        <label class="block text-xs font-semibold text-amber-400 mb-1">Voie d'arrêt à Zoo</label>
+                                        <select id="voie-pav-Zoo" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
+                                        </select>
+                                    </div>
+                                    <div id="cv-pav-Pavillon Noir">
+                                        <label class="block text-xs font-semibold text-indigo-400 mb-1">Voie d'arrêt à Pavillon Noir</label>
+                                        <select id="voie-pav-Pavillon Noir" class="w-full bg-snck-dark border border-snck-border rounded-xl px-3 py-1.5 text-xs text-white">
+                                            <option value="Voie A">Voie A</option><option value="Voie B">Voie B</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block text-xs text-gray-400 mb-2">Arrêts intermédiaires et temps d'arrêt (en minutes)</label>
+                                <div id="arrets-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="Mairie" class="rounded bg-snck-dark border-snck-border text-blue-500"> Mairie</label>
+                                        <input type="number" id="arret-duree-Mairie" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="Technicentre" class="rounded bg-snck-dark border-snck-border text-blue-500"> Technicentre</label>
+                                        <input type="number" id="arret-duree-Technicentre" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="Hôpital" class="rounded bg-snck-dark border-snck-border text-blue-500"> Hôpital</label>
+                                        <input type="number" id="arret-duree-Hôpital" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="*Stockage" class="rounded bg-snck-dark border-snck-border text-blue-500"> *Stockage</label>
+                                        <input type="number" id="arret-duree-*Stockage" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="*Dépot" class="rounded bg-snck-dark border-snck-border text-blue-500"> *Dépot</label>
+                                        <input type="number" id="arret-duree-*Dépot" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-xs text-rose-300 mb-2"><i class="fa-solid fa-circle-exclamation mr-1"></i> Arrêts exceptionnels (facultatif) — gares normalement non desservies où le train s'arrêtera exceptionnellement</label>
+                                <div id="arrets-exc-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                            </div>
+                            </div><!-- /bloc-monoligne -->
+
+                            <!-- MODE TRANS-LIGNES -->
+                            <div id="bloc-trans" class="space-y-4" style="display:none">
+                                <p class="text-xs text-gray-400">Mode <b class="text-blue-400">Trans-Lignes</b> : coche simplement les arrêts du train sur les deux lignes (dans l'ordre de la ligne). La gare commune (Hôpital ou Ville) est la correspondance.</p>
+                                <div id="trans-segments" class="space-y-4"></div>
+                                
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2.5 rounded-xl cursor-pointer">
+                                <i class="fa-solid fa-check mr-2"></i> Enregistrer le sillon
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold flex items-center justify-between">
+                        <span>Sillons prévus sur le réseau</span>
+                        <span id="sillons-count" class="text-xs font-mono bg-snck-card border border-snck-border px-3 py-1 rounded-full text-gray-400">0 sillon actif</span>
+                    </h3>
+                    <div id="liste-sillons" class="space-y-4">
+                        <div class="text-center py-12 bg-snck-card border border-snck-border rounded-2xl text-gray-400">Aucun sillon prévu.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. MODULE : SÉLECTION DU SILLON POUR CONDUIRE -->
+        <div id="screen-conduire" class="app-screen hidden flex-1 flex flex-col">
+            <header class="bg-snck-card border-b border-snck-border px-6 py-4 flex items-center justify-between">
+                <button onclick="retourMenuConduite()" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-arrow-left"></i> Menu
+                </button>
+                <h2 class="font-bold text-lg text-emerald-400"><i class="fa-solid fa-train mr-2"></i> Sélection Sillon (Conduite)</h2>
+            </header>
+            <div class="flex-1 p-6 max-w-6xl mx-auto w-full space-y-6">
+                <div class="bg-snck-card border border-snck-border rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-2">Sillons programmés</h3>
+                    <div id="liste-sillons-conduite" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. CABINE PC -->
+        <div id="screen-cabine-pc" class="app-screen hidden flex-1 flex flex-col">
+          <div class="sv sv-pc">
+            <div class="sv-top">
+                <button id="pc-btn-retour" onclick="openConduireModule('pc')" class="sv-back" title="Changer de sillon"><i class="fa-solid fa-arrow-left"></i></button>
+                <i class="fa-solid fa-train sv-ico"></i>
+                <div>
+                    <div class="sv-title">SUIVI TRAIN <span id="pc-cabine-numero">SK-000</span></div>
+                    <div id="pc-cabine-titre" class="sv-sub">Origine > Terminus</div>
+                </div>
+                <div id="pc-cabine-heure" class="sv-heure">--:--</div>
+            </div>
+            <div class="sv-bar"></div>
+            <div class="sv-info">
+                <span id="pc-cabine-date">Date : JJ/MM</span>
+                <span style="text-align:right"><span id="pc-cabine-horaires" style="font-family:ui-monospace,monospace;color:var(--cream)">00:00 ➔ 00:00</span><br><span id="pc-cabine-retard" class="text-xs font-semibold text-emerald-400">+0 min (À l'heure)</span></span>
+            </div>
+            <div class="sv-head"><span></span><span>Gare</span><span>Arrivée</span><span>Départ</span><span>État</span></div>
+            <div class="sv-scroll"><div id="pc-cabine-parcours-list" class="sv-list"></div></div>
+            <div class="sv-bottom">
+                <div class="sv-pert-t">Perturbations</div>
+                <div id="pc-cabine-perturbations" class="sv-pert"></div>
+                <div class="sv-btns">
+                    <button id="btn-commencer-pc" onclick="toggleCommencerConduite()" disabled class="btn-commencer-conduite sv-btn">Commencer le service (Attente heure départ)</button>
+                    <button onclick="openRetardModal()" class="sv-btn"><i class="fa-solid fa-clock"></i> Signaler retard / avance</button>
+                    <button onclick="openArretExcModal()" class="sv-btn"><i class="fa-solid fa-circle-exclamation"></i> Arrêt exceptionnel</button>
+                    <button onclick="openArretSupModal()" class="sv-btn"><i class="fa-solid fa-circle-xmark"></i> Supprimer un arrêt</button>
+                </div>
+                <div class="sv-btns sv-btns2">
+                    <button id="pc-btn-fin-service" onclick="ouvrirFicheFinService()" disabled class="sv-btn sv-sm sv-end"><i class="fa-solid fa-flag-checkered"></i> Finir le service (<span class="fin-service-timer">En attente</span>)</button>
+                    <button onclick="supprimerService()" class="sv-btn sv-sm sv-del"><i class="fa-solid fa-trash"></i> Supprimer le Service</button>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. CABINE TÉLÉPHONE -->
+        <div id="screen-cabine-tel" class="app-screen hidden flex-1 flex flex-col" style="background:#192130">
+          <div class="sv sv-tel">
+            <div class="sv-top">
+                <button id="tel-btn-retour" onclick="openConduireModule('tel')" class="sv-back" title="Changer de sillon"><i class="fa-solid fa-arrow-left"></i></button>
+                <i class="fa-solid fa-train sv-ico"></i>
+                <div style="min-width:0">
+                    <div class="sv-title">SUIVI TRAIN</div>
+                    <div id="tel-cabine-titre" class="sv-sub" style="font-weight:700">N° sillon</div>
+                    <div id="tel-cabine-sous-titre" class="sv-sub">Origine > Terminus</div>
+                </div>
+                <div id="tel-cabine-heure" class="sv-heure">--:--</div>
+            </div>
+            <div class="sv-bar"></div>
+            <div class="sv-info">
+                <span id="tel-cabine-date-comp">JJ/MM</span>
+                <span id="tel-cabine-retard" class="text-[11px] font-semibold" style="text-align:right"></span>
+            </div>
+            <div class="sv-head"><span></span><span>Gare</span><span>Arrivée</span><span>Départ</span><span>État</span></div>
+            <div class="sv-scroll"><div id="tel-cabine-parcours-list" class="sv-list"></div></div>
+            <div class="sv-bottom">
+                <div class="sv-pert-t">Perturbations</div>
+                <div id="tel-cabine-perturbations" class="sv-pert"></div>
+                <div class="sv-btns">
+                    <button id="btn-commencer-tel" onclick="toggleCommencerConduite()" disabled class="btn-commencer-conduite sv-btn"><i class="fa-solid fa-play"></i> Commencer</button>
+                    <button onclick="openRetardModal()" class="sv-btn"><i class="fa-solid fa-clock"></i> Avance / Retard</button>
+                    <button onclick="openArretExcModal()" class="sv-btn"><i class="fa-solid fa-circle-exclamation"></i> Arrêt exceptionnel</button>
+                    <button onclick="openArretSupModal()" class="sv-btn"><i class="fa-solid fa-circle-xmark"></i> Supprimer un arrêt</button>
+                </div>
+                <div class="sv-btns sv-btns2">
+                    <button id="tel-btn-b3" onclick="ouvrirFicheFinService()" disabled class="sv-btn sv-sm sv-end"><i class="fa-solid fa-flag-checkered"></i> Finir (<span class="fin-service-timer">En attente</span>)</button>
+                    <button onclick="supprimerService()" class="sv-btn sv-sm sv-del"><i class="fa-solid fa-trash"></i> Supprimer le service</button>
+                </div>
+            </div>
+          </div>
+        </div>
+
+    </div>
+
+    <div id="cloud-status-badge" class="fixed bottom-3 right-3 z-40 px-3 py-1.5 rounded-full text-[11px] font-semibold border backdrop-blur bg-gray-500/10 text-gray-400 border-gray-500/20"><i class="fa-solid fa-cloud mr-1"></i> Cloud…</div>
+
+    <!-- MODALE PRISE DE SERVICE -->
+    <div id="modal-prise-service" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-sm w-full rounded-2xl p-6 shadow-2xl text-center space-y-5">
+            <h3 class="text-xl font-bold">Prendre ce service ?</h3>
+            <p id="prise-service-details" class="text-xs text-gray-400 mt-1">Verrouillage exclusif du sillon.</p>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closePriseServiceModal()" class="flex-1 py-2.5 rounded-xl bg-snck-dark border border-snck-border text-xs text-gray-300">Annuler</button>
+                <button onclick="confirmerPriseService()" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">Je fais ce service</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE FICHE FIN -->
+    <div id="modal-fiche-fin" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-6">
+            <h3 class="text-xl font-bold">Fiche Bilan de Fin de Service</h3>
+            <div class="grid grid-cols-2 gap-4 bg-snck-dark p-4 rounded-xl border border-snck-border text-sm">
+                <div><span class="text-xs text-gray-400 block">N° Sillon</span><span id="fiche-numero" class="font-bold font-mono text-blue-400">SK-000</span></div>
+                <div><span class="text-xs text-gray-400 block">Parcours</span><span id="fiche-parcours" class="font-semibold">--</span></div>
+            </div>
+            <button onclick="validerEtQuitterService()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm cursor-pointer">Terminer et Supprimer le Sillon</button>
+        </div>
+    </div>
+
+    <!-- MODALE ARRÊT EXCEPTIONNEL -->
+    <div id="modal-arret-exc" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold text-rose-400 flex items-center gap-2"><i class="fa-solid fa-circle-exclamation"></i> Arrêt exceptionnel</h3>
+            <p class="text-xs text-gray-400">Coche les gares du parcours où le train s'arrête exceptionnellement et indique la durée d'arrêt (min). Les horaires suivants sont recalculés. Décocher une gare retire l'arrêt.</p>
+            <form onsubmit="handleArretExc(event)" class="space-y-4">
+                <div id="arret-exc-liste" class="space-y-2"></div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeArretExcModal()" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300">Annuler</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 text-white font-semibold">Appliquer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALE ARRÊT SUPPRIMÉ -->
+    <div id="modal-arret-sup" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold text-red-400 flex items-center gap-2"><i class="fa-solid fa-circle-xmark"></i> Supprimer un arrêt</h3>
+            <p class="text-xs text-gray-400">Coche les gares où le train ne s'arrêtera plus. L'arrêt reste affiché, barré et marqué « Arrêt supprimé ». Décocher une gare rétablit l'arrêt.</p>
+            <form onsubmit="handleArretSup(event)" class="space-y-4">
+                <div id="arret-sup-liste" class="space-y-2"></div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeArretSupModal()" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300">Annuler</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold">Appliquer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALE RETARD -->
+    <div id="modal-retard" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-snck-card border border-snck-border max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold text-amber-400 flex items-center gap-2"><i class="fa-solid fa-clock"></i> Signaler Avance ou Retard</h3>
+            <form onsubmit="handleSignalerRetardAvance(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Mode</label>
+                    <select id="retard-mode" onchange="changerModeRetard()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                        <option value="global">Même écart sur tout le trajet</option>
+                        <option value="gares">Écart différent selon la gare</option>
+                    </select>
+                </div>
+                <div id="retard-bloc-global" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Type</label>
+                        <select id="retard-type" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                            <option value="retard">Retard (+)</option>
+                            <option value="avance">Avance (-)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Minutes</label>
+                        <input type="number" id="retard-minutes" min="1" value="5" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                    </div>
+                </div>
+                <div id="retard-bloc-gares" class="hidden space-y-2">
+                    <p class="text-xs text-gray-400">Écart en minutes à chaque gare desservie : <b>+3</b> = retard, <b>-7</b> = avance, <b>0</b> = à l'heure. Une gare laissée vide garde l'écart de la gare précédente (ex : Fontaine +0, Mairie -7, Ville +3).</p>
+                    <div id="retard-gares-liste" class="space-y-2"></div>
+                </div>
+                <div>
+                    <label id="retard-motif-label" class="block text-sm text-gray-400 mb-1">Motif</label>
+                    <input type="text" id="retard-motif" required placeholder="ex: Incident, régulation..." class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2 text-white">
+                </div>
+                <div class="flex justify-between gap-3 pt-2">
+                    <button type="button" onclick="effacerRetardsManuels()" class="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm hover:bg-red-500/20">Effacer</button>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeRetardModal()" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300">Annuler</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-amber-600 text-white font-semibold">Appliquer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALE MATÉRIEL -->
+    <div id="modal-materiel" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <form onsubmit="enregistrerMateriel(event)" class="bg-snck-card border border-snck-border max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 id="mat-titre" class="text-xl font-bold"></h3>
+            <div><label class="block text-sm text-gray-400 mb-1">Numéro du matériel *</label><input id="mat-numero" required class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white disabled:opacity-70"></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Type de matériel</label><input id="mat-type" list="mat-types" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white disabled:opacity-70"><datalist id="mat-types"></datalist></div>
+            <div><label class="block text-sm text-gray-400 mb-1">Nom ou surnom (facultatif)</label><input id="mat-nom" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white disabled:opacity-70"></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-sm text-gray-400 mb-1">Gare / installation actuelle</label><select id="mat-gare" onchange="majVoiesDatalist()" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white disabled:opacity-70"></select></div>
+                <div><label class="block text-sm text-gray-400 mb-1">Voie actuelle</label><input id="mat-voie" list="mat-voies" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white disabled:opacity-70"><datalist id="mat-voies"></datalist></div>
+            </div>
+            <div><label class="block text-sm text-gray-400 mb-1">Statut</label><select id="mat-statut" class="w-full bg-snck-dark border border-snck-border rounded-xl px-4 py-2.5 text-white disabled:opacity-70"></select></div>
+            <div id="mat-info" class="text-xs text-gray-400"></div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="fermerMaterielModal()" id="mat-annuler" class="px-4 py-2 rounded-xl bg-snck-dark border border-snck-border text-gray-300 cursor-pointer">Annuler</button>
+                <button type="submit" id="mat-enregistrer" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold cursor-pointer">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Comptes (chargés depuis le serveur, réservé à l'administrateur)
+        let accountsState = [];
+        let currentUser = null;
+        let currentUserIsAdmin = false;
+        let sillonsState = JSON.parse(localStorage.getItem('snck_sillons')) || [];
+        let parcState = JSON.parse(localStorage.getItem('snck_parc') || '[]');
+        let activeSillonIndex = null;
+        let pendingPriseIndex = null;
+        let heureArriveeFinaleReelle = null;
+        let heureArriveeFinaleTs = null;
+        let serviceAtteintTerminus = false;
+        let currentPlatform = 'pc';
+
+let cloudVersion = null;
+let cloudBase = { sillons: [], perturbations: [], parc: [] };
+let cloudReady = false;
+let cloudBusy = false;
+let cloudDirty = false;
+let cloudTimer;
+const oldAccounts = JSON.parse(localStorage.getItem('snck_accounts') || '[]');
+localStorage.removeItem('snck_current_user');
+function setCloudStatus(state, message) {
+    const badge = document.getElementById('cloud-status-badge');
+    if (!badge) return;
+    const s = ({
+        online: [dbBase() ? 'Cloud synchronisé' : 'Mode local (cet appareil)', 'text-emerald-400 border-emerald-500/30'],
+        connecting: ['Synchronisation…', 'text-blue-400 border-blue-500/30'],
+        error: ['Non synchronisé — nouvelle tentative automatique', 'text-red-400 border-red-500/30'],
+        offline: ['Connexion requise', 'text-gray-400 border-gray-500/30']
+    })[state] || ['—', 'text-gray-400 border-gray-500/30'];
+    badge.innerHTML = '<i class="fa-solid fa-cloud mr-1"></i>' + s[0];
+    badge.title = message || '';
+    badge.className = 'fixed bottom-3 right-3 z-40 px-3 py-1.5 rounded-full text-[11px] font-semibold border backdrop-blur bg-snck-dark ' + s[1];
+}
+// ====== Stockage : espace en ligne (fonction Netlify + Netlify Blobs) ou mode local ======
+// Optionnel : colle ici le code de synchro (affiché dans l'écran admin) pour que tous les appareils l'utilisent d'office.
+const DB_ID = '';
+const BLOB = '/api/db';
+const ADMIN_NAME = 'Keke73';
+function dbBase() { return (localStorage.getItem('snck_db_id') || DB_ID).trim(); }
+(function () { // lien de partage : index.html#sync=CODE
+    const m = location.hash.match(/sync=([\w-]+)/);
+    if (m) { localStorage.setItem('snck_db_id', m[1]); history.replaceState(null, '', location.pathname + location.search); }
+})();
+const apiErr = (message, status) => { const e = new Error(message); e.status = status; return e; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const toHex = bytes => Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+const hexKey = s => toHex(new TextEncoder().encode(String(s).trim().toLowerCase()));
+
+async function blobFetch(method, body) {
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+        const r = await fetch(BLOB + '?id=' + encodeURIComponent(dbBase()), {
+            method, cache: 'no-store', signal: ctrl.signal,
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: body === undefined ? undefined : JSON.stringify(body)
+        });
+        if (r.status === 404) throw apiErr('Espace de synchronisation introuvable (code invalide ou supprimé).', 502);
+        if (!r.ok) throw apiErr('Erreur du service de synchronisation (' + r.status + ').', 502);
+        const data = await r.json().catch(() => null);
+        if (method === 'GET' && (data === null || typeof data !== 'object')) throw apiErr('Réponse inattendue du service de synchronisation.', 502);
+        return data;
+    } catch (e) {
+        if (e.status) throw e;
+        throw apiErr(e.name === 'AbortError' ? 'Le service de synchronisation ne répond pas (délai dépassé).' : 'Connexion au service de synchronisation impossible.', 0);
+    } finally { clearTimeout(timer); }
+}
+// Tout le stockage est un seul document JSON : lecture, modification, réécriture
+async function dbReq(method, path, value, shallow) {
+    if (!dbBase()) return localDb(method, path, value, shallow);
+    const root = await blobFetch('GET');
+    const res = treeOp(root, method, path, value, shallow);
+    if (method !== 'GET') await blobFetch('PUT', root);
+    return res;
+}
+function treeOp(root, method, path, value, shallow) {
+    const parts = path.split('/').filter(Boolean);
+    let node = root;
+    for (const p of parts.slice(0, -1)) {
+        if (typeof node[p] !== 'object' || node[p] === null) { if (method !== 'PUT') return null; node[p] = {}; }
+        node = node[p];
+    }
+    const last = parts[parts.length - 1];
+    if (method === 'GET') {
+        const v = node[last] === undefined ? null : node[last];
+        return shallow && v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).map(k => [k, true])) : v;
+    }
+    if (method === 'PUT') node[last] = value; else delete node[last];
+    return method === 'PUT' ? value : null;
+}
+function localDb(method, path, value, shallow) {
+    const root = JSON.parse(localStorage.getItem('snck_localdb') || '{}');
+    const res = treeOp(root, method, path, value, shallow);
+    if (method !== 'GET') localStorage.setItem('snck_localdb', JSON.stringify(root));
+    return res;
+}
+
+// ---- Comptes : seuls un sel et un hash PBKDF2 sont stockés, jamais le mot de passe ----
+async function hashPwd(pwd, salt) {
+    if (!crypto.subtle) throw apiErr('Le chiffrement du navigateur nécessite une page en HTTPS.', 500);
+    const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pwd), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations: 150000, hash: 'SHA-256' }, k, 256);
+    return toHex(new Uint8Array(bits));
+}
+async function creerCompte(name, pwd, admin) {
+    const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+    const acc = { id: name, salt, hash: await hashPwd(pwd, salt), admin: !!admin };
+    await dbReq('PUT', 'accounts/' + hexKey(name), acc);
+    return acc;
+}
+async function sessionUser() {
+    const name = localStorage.getItem('snck_session');
+    if (!name) return null;
+    const acc = await dbReq('GET', 'accounts/' + hexKey(name));
+    return acc ? { name: acc.id, admin: acc.admin === true } : null; // compte supprimé => session invalide
+}
+
+// ---- Routes (mêmes noms que l'ancienne API : le reste de la page ne change pas) ----
+async function api(path, method = 'GET', body) {
+    try { return await route(path, method, body || {}); }
+    catch (e) {
+        if (e.status === 401 && path !== 'login' && path !== 'session' && currentUser) sessionExpiree();
+        throw e;
+    }
+}
+async function route(path, method, body) {
+    if (path === 'login' && method === 'POST') {
+        const name = String(body.name || '').trim(), pwd = String(body.password || '');
+        if (!name) throw apiErr('Identifiant requis.', 400);
+        let acc = await dbReq('GET', 'accounts/' + hexKey(name));
+        if (!acc && name.toLowerCase() === ADMIN_NAME.toLowerCase() && !(await dbReq('GET', 'accounts', undefined, true))) {
+            if (pwd.length < 6) throw apiErr('Premier lancement : choisis un mot de passe de 6 caractères minimum.', 400);
+            acc = await creerCompte(ADMIN_NAME, pwd, true); // le tout premier mot de passe devient celui de l'admin
+        } else if (!acc || await hashPwd(pwd, acc.salt) !== acc.hash) {
+            await sleep(600);
+            throw apiErr('Identifiant ou mot de passe incorrect.', 401);
+        }
+        localStorage.setItem('snck_session', acc.id);
+        return { name: acc.id, admin: acc.admin === true };
+    }
+    if (path === 'logout') { localStorage.removeItem('snck_session'); return { ok: true }; }
+    const user = await sessionUser();
+    if (!user) throw apiErr('Session absente ou expirée.', 401);
+    if (path === 'session') return user;
+
+    if (path === 'state' && method === 'GET') {
+        const s = await dbReq('GET', 'state');
+        let data = s || {};
+        if (s && s.json) { try { data = JSON.parse(s.json); } catch {} }
+        return { sillons: data.sillons || [], perturbations: data.perturbations || [], parc: data.parc || [], version: s ? s.version : null, admin: user.admin };
+    }
+    if (path === 'state' && method === 'PUT') {
+        if (!Array.isArray(body.sillons) || !Array.isArray(body.perturbations)) throw apiErr('Données invalides.', 400);
+        const cur = await dbReq('GET', 'state');
+        if ((cur ? cur.version : null) !== (body.version ?? null)) throw apiErr('Conflit de version.', 409);
+        const version = (cur ? cur.version : 0) + 1;
+        const w = toHex(crypto.getRandomValues(new Uint8Array(6)));
+        await dbReq('PUT', 'state', { sillons: body.sillons, perturbations: body.perturbations, parc: Array.isArray(body.parc) ? body.parc : ((cur && cur.parc) || []), version, w });
+        const chk = await dbReq('GET', 'state'); // relecture : si un autre appareil a écrit en même temps, on signale un conflit
+        if (!chk || chk.w !== w) throw apiErr('Conflit de version.', 409);
+        return { version };
+    }
+    if (path === 'sillons' && method === 'GET') return (await route('state', 'GET', {})).sillons;
+
+    if (path === 'accounts') {
+        if (!user.admin) throw apiErr("Réservé à l'administrateur.", 403);
+        const all = (await dbReq('GET', 'accounts')) || {};
+        if (method === 'GET') return Object.values(all).map(a => ({ id: a.id, admin: a.admin === true })).sort((a, b) => (b.admin === true) - (a.admin === true));
+        const name = String(body.name || '').trim();
+        if (method === 'POST') {
+            const password = String(body.password || '');
+            if (!/^[\p{L}\p{N}_.\- ]{2,32}$/u.test(name)) throw apiErr('Identifiant invalide (2 à 32 caractères : lettres, chiffres, _ . -).', 400);
+            if (password.length < 6) throw apiErr('Mot de passe : 6 caractères minimum.', 400);
+            if (all[hexKey(name)]) throw apiErr('Cet identifiant existe déjà.', 409);
+            await creerCompte(name, password, false);
+            return { ok: true };
+        }
+        if (method === 'DELETE') {
+            const acc = all[hexKey(name)];
+            if (acc && acc.admin) throw apiErr("Le compte administrateur ne peut pas être supprimé.", 400);
+            await dbReq('DELETE', 'accounts/' + hexKey(name));
+            return { ok: true };
+        }
+    }
+    throw apiErr('Route introuvable (' + path + ').', 404);
+}
+
+// ---- Affichage de la base dans l'écran admin / connexion ----
+function urlApiSillons() { return dbBase() ? location.origin + BLOB + '?id=' + dbBase() : ''; }
+function lienSync() { return dbBase() ? location.href.split('#')[0] + '#sync=' + dbBase() : ''; }
+
+
+
+function configurerCloud() {
+    const v = prompt("Code ou lien de synchronisation à rejoindre (vide = mode local sur cet appareil) :", dbBase());
+    if (v === null) return;
+    const id = v.trim().replace(/^.*(sync=|\/)/, '');
+    if (!/^[\w-]*$/.test(id)) { alert('Code invalide.'); return; }
+    if (id) localStorage.setItem('snck_db_id', id); else localStorage.removeItem('snck_db_id');
+    updateBucketIdDisplay(); setCloudStatus('offline');
+}
+async function creerEspaceCloud() {
+    if (dbBase() && !confirm('Un espace est déjà configuré. En créer un nouveau ? (les autres appareils devront le rejoindre)')) return;
+    try {
+        const root = JSON.parse(localStorage.getItem('snck_localdb') || '{}'); // reprend les comptes et sillons de cet appareil
+        const id = uuid();
+        const r = await fetch(BLOB + '?id=' + encodeURIComponent(id), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(root) });
+        if (!r.ok) throw new Error('Le service a répondu ' + r.status + (r.status === 404 ? ' (la fonction /api/db n\u2019est pas déployée ?)' : ''));
+        localStorage.setItem('snck_db_id', id);
+        updateBucketIdDisplay(); setCloudStatus('offline');
+        prompt('Synchronisation activée. Ouvre ce lien sur tes autres appareils (copie-le, il est aussi dans l’écran admin) :', lienSync());
+    } catch (e) { alert('Création impossible : ' + (e.message || e)); }
+}
+// Session expirée ou compte supprimé : retour à l'écran de connexion.
+function sessionExpiree() {
+    viderCachesLocaux();
+    currentUser = null;
+    currentUserIsAdmin = false;
+    cloudReady = false;
+    cloudDirty = false;
+    accountsState = [];
+    activeSillonIndex = null;
+    setCloudStatus('offline');
+    document.querySelectorAll('.fixed.inset-0').forEach(m => m.classList.add('hidden'));
+    switchScreen('screen-auth');
+    alert('Ta session a expiré. Reconnecte-toi.');
+}
+// Reprend la session existante (cookie) au rechargement de la page.
+async function restaurerSession() {
+    try {
+        const session = await api('session');
+        currentUser = session.name;
+        currentUserIsAdmin = session.admin === true;
+    } catch { switchScreen('screen-auth'); return; }
+    try { await initializeCloud(); } catch (error) { setCloudStatus('error', error.message); }
+    verifierAccesEtAfficherSelection();
+}
+function updateBucketIdDisplay() {
+    document.getElementById('cloud-bucket-id').textContent = dbBase() || 'Mode local (aucun espace en ligne)';
+    document.getElementById('api-url-sillons').textContent = urlApiSillons() || 'Active la synchronisation en ligne pour obtenir l’adresse';
+    const ex = document.getElementById('api-example');
+    if (ex) ex.textContent = urlApiSillons() ? `fetch('${urlApiSillons()}')\n  .then(r => r.json())\n  .then(data => console.log(data.state.sillons));` : '—';
+    const l = document.getElementById('cloud-cfg-label');
+    if (l) l.textContent = dbBase() ? 'en ligne (' + dbBase().slice(0, 8) + '…)' : 'locale (cet appareil)';
+}
+function copyApiUrl() { if (urlApiSillons()) copierTexte(urlApiSillons()); }
+function copyBucketId() { if (lienSync()) copierTexte(lienSync()); }
+function snapshot() { return JSON.parse(JSON.stringify({ sillons: sillonsState, perturbations: perturbationsState, parc: parcState })); }
+function mergeChanges(base, local, remote) {
+    const result = {};
+    for (const key of ['sillons', 'perturbations', 'parc']) {
+        base[key] = base[key] || []; local[key] = local[key] || []; remote[key] = remote[key] || [];
+        const before = new Map(base[key].map(x => [String(x.id), x]));
+        const after = new Map(local[key].map(x => [String(x.id), x]));
+        const merged = new Map(remote[key].map(x => [String(x.id), x]));
+        for (const id of before.keys()) if (!after.has(id)) merged.delete(id);
+        for (const [id, item] of after) {
+            if (!before.has(id)) merged.set(id, item);
+            else if (merged.has(id) && JSON.stringify(before.get(id)) !== JSON.stringify(item)) {
+                const next = { ...(merged.get(id) || item) };
+                for (const field of new Set([...Object.keys(before.get(id)), ...Object.keys(item)])) {
+                    if (JSON.stringify(before.get(id)[field]) !== JSON.stringify(item[field])) {
+                        if (field in item) next[field] = item[field]; else delete next[field];
+                    }
+                }
+                merged.set(id, next);
+            }
+        }
+        result[key] = [...merged.values()];
+    }
+    return result;
+}
+function applyState(data) {
+    // Keep the active cab attached to its train when another device adds/deletes a service.
+    const activeId = activeSillonIndex !== null ? sillonsState[activeSillonIndex]?.id : null;
+    const pendingId = pendingPriseIndex !== null ? sillonsState[pendingPriseIndex]?.id : null;
+    sillonsState = data.sillons || [];
+    perturbationsState = data.perturbations || [];
+    parcState = data.parc || [];
+    if (activeId !== null) {
+        const index = sillonsState.findIndex(x => x.id === activeId);
+        activeSillonIndex = index < 0 ? null : index;
+        if (index < 0) switchScreen('screen-conduire');
+    }
+    if (pendingId !== null) {
+        const index = sillonsState.findIndex(x => x.id === pendingId);
+        pendingPriseIndex = index < 0 ? null : index;
+        if (index < 0) closePriseServiceModal();
+    }
+    localStorage.setItem('snck_sillons', JSON.stringify(sillonsState));
+    localStorage.setItem('snck_perturbations', JSON.stringify(perturbationsState));
+    localStorage.setItem('snck_parc', JSON.stringify(parcState));
+    renderSillons(); renderSillonsConduite(); renderPerturbations(); rafraichirParc();
+    const sa = getActif();
+    if (sa && sa.conducteur && sa.conducteur !== currentUser) {
+        activeSillonIndex = null;
+        document.getElementById('tel-btn-retour').style.display = 'flex';
+        document.getElementById('pc-btn-retour').style.display = 'flex';
+        switchScreen('screen-conduire');
+        alert('Ce service a été pris par ' + sa.conducteur + '.');
+    }
+    if (activeSillonIndex !== null) { calculerHorairesParcours(); mettreAJourAffichageRetard(); updateBoutonConduiteUI(); }
+}
+function cloudSave(immediate) {
+    cloudDirty = true;
+    setCloudStatus('connecting');
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(flushCloud, immediate ? 0 : 400);
+}
+async function flushCloud() {
+    if (!currentUser || !cloudReady || cloudBusy || !cloudDirty) return;
+    cloudBusy = true;
+    const sent = snapshot();
+    try {
+        const result = await api('state', 'PUT', { ...sent, version: cloudVersion });
+        cloudVersion = result.version;
+        cloudBase = sent;
+        cloudDirty = JSON.stringify(snapshot()) !== JSON.stringify(sent);
+        setCloudStatus(cloudDirty ? 'connecting' : 'online');
+    } catch (error) {
+        try {
+        if (error.status === 409) {
+            const remote = await api('state');
+            const merged = mergeChanges(cloudBase, snapshot(), remote);
+            cloudBase = { sillons: remote.sillons || [], perturbations: remote.perturbations || [], parc: remote.parc || [] };
+            cloudVersion = remote.version;
+            applyState(merged);
+        } else setCloudStatus('error');
+        } catch { setCloudStatus('error'); }
+    } finally {
+        cloudBusy = false;
+        if (cloudDirty) cloudTimer = setTimeout(flushCloud, 2000);
+    }
+}
+async function cloudPull() {
+    if (!currentUser || cloudBusy) return;
+    if (!cloudReady) {
+        cloudBusy = true;
+        try { await initializeCloud(); }
+        catch (error) { setCloudStatus('error', error.message); }
+        finally { cloudBusy = false; }
+        return;
+    }
+    if (cloudDirty) return;
+    cloudBusy = true;
+    try {
+        const data = await api('state');
+        currentUserIsAdmin = data.admin === true;
+        if (cloudDirty) return;
+        if (data.version !== cloudVersion) {
+            cloudVersion = data.version;
+            cloudBase = { sillons: data.sillons || [], perturbations: data.perturbations || [], parc: data.parc || [] };
+            applyState(cloudBase);
+        }
+        if (data.admin) {
+            try { accountsState = await api('accounts'); renderComptesList(); }
+            catch (error) { document.getElementById('liste-comptes-container').title = error.message; }
+        }
+        setCloudStatus('online');
+    } catch { setCloudStatus('error'); }
+    finally { cloudBusy = false; }
+}
+async function initializeCloud() {
+    const data = await api('state');
+    currentUserIsAdmin = data.admin === true;
+    cloudVersion = data.version;
+    if (data.version === null && data.admin) {
+        cloudReady = true;
+        cloudDirty = true;
+        await flushCloud();
+    } else {
+        cloudBase = { sillons: data.sillons || [], perturbations: data.perturbations || [], parc: data.parc || [] };
+        applyState(cloudBase);
+        cloudReady = true;
+    }
+    if (data.admin) {
+        accountsState = await api('accounts');
+        let importFailed = false;
+        for (const account of oldAccounts) {
+            if (account.pwd && !accountsState.some(x => x.id.toLowerCase() === account.id.toLowerCase())) {
+                try {
+                    await api('accounts', 'POST', { name: account.id, password: account.pwd });
+                    accountsState.push({ id: account.id });
+                } catch { importFailed = true; }
+            }
+        }
+        if (!importFailed) { localStorage.removeItem('snck_accounts'); oldAccounts.length = 0; }
+        else alert('Certains anciens comptes n’ont pas pu être importés. Leurs données locales sont conservées. Recrée-les dans la gestion des comptes avec un mot de passe de 6 caractères minimum.');
+    }
+    setCloudStatus(cloudDirty ? 'error' : 'online');
+}
+window.addEventListener('DOMContentLoaded', () => { updateBucketIdDisplay(); setCloudStatus('offline'); });
+setInterval(() => { if (cloudDirty && cloudReady) flushCloud(); else cloudPull(); }, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (cloudDirty && cloudReady) flushCloud(); else cloudPull(); } });
+window.addEventListener('online', () => { if (cloudDirty && cloudReady) flushCloud(); else cloudPull(); });
+window.addEventListener('beforeunload', e => { if (cloudDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+
+  const ligneOrdre = ['Fontaine', 'Mairie', 'Technicentre', 'Hôpital', '*Stockage', '*Dépot', 'Ville'];
+        // Temps de trajet en secondes (Fontaine-Mairie 51,77 s ; Mairie-Hôpital 23,41 s ; Hôpital-Ville 30,35 s)
+        // Sous-tronçons répartis au prorata des anciens temps : Mairie-Hôpital (9/27), Hôpital-Ville (25/8/16)
+        const tempsTrajetSecondes = {
+            'Fontaine->Mairie': 51.77, 'Mairie->Technicentre': 5.85, 'Technicentre->Hôpital': 17.56, 'Hôpital->*Stockage': 15.48, '*Stockage->*Dépot': 4.96, '*Dépot->Ville': 9.91,
+            'Ville->*Dépot': 9.91, '*Dépot->*Stockage': 4.96, '*Stockage->Hôpital': 15.48, 'Hôpital->Technicentre': 17.56, 'Technicentre->Mairie': 5.85, 'Mairie->Fontaine': 51.77
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            detecterPlateforme();
+            restaurerSession();
+        });
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const name = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const button = e.submitter;
+            if (button) button.disabled = true;
+            try {
+                const result = await api('login', 'POST', { name, password });
+                currentUser = result.name;
+                currentUserIsAdmin = result.admin === true;
+                try { await initializeCloud(); }
+                catch (error) { setCloudStatus('error', error.message); }
+                document.getElementById('auth-password').value = '';
+                verifierAccesEtAfficherSelection();
+            } catch (error) { currentUser = null; cloudReady = false; alert(error.message); }
+            finally { if (button) button.disabled = false; }
+        }
+
+        function verifierAccesEtAfficherSelection() {
+            document.getElementById('current-user-display').innerText = currentUser;
+            
+            // Afficher la gestion des comptes selon les droits vérifiés par le serveur.
+            const grid = document.getElementById('modes-grid');
+            const adminMenuId = 'admin-menu-card';
+            let existingAdminCard = document.getElementById(adminMenuId);
+
+            if (currentUserIsAdmin) {
+                grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6 pt-4";
+                if (!existingAdminCard) {
+                    let card = document.createElement('button');
+                    card.id = adminMenuId;
+                    card.onclick = () => openAdminComptesModule();
+                    card.className = "group relative bg-snck-card border border-amber-500/30 hover:border-amber-500 p-8 rounded-2xl text-left transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/10 hover:-translate-y-1 cursor-pointer md:col-span-2";
+                    card.innerHTML = `
+                        <div class="absolute top-6 right-6 w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-user-shield text-2xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2 text-amber-400">Gestion des Comptes (Admin)</h3>
+                        <p class="text-gray-400 text-sm mb-4">Panneau exclusif pour créer, modifier ou supprimer les accès conducteurs.</p>
+                        <span class="inline-flex items-center gap-2 text-amber-400 font-semibold text-sm">
+                            Gérer les comptes <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </span>`;
+                    grid.appendChild(card);
+                }
+            } else {
+                grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6 pt-4";
+                if (existingAdminCard) existingAdminCard.remove();
+            }
+
+            switchScreen('screen-selection');
+        }
+
+        async function deconnecterCompte() {
+            if (cloudDirty) { await flushCloud(); if (cloudDirty) { alert('Synchronisation en attente. Réessaie avant de te déconnecter.'); return; } }
+            try { await api('logout', 'POST'); } catch (error) { alert(error.message); return; }
+            cloudReady = false;
+            accountsState = [];
+            setCloudStatus('offline');
+            localStorage.removeItem('snck_current_user');
+            currentUser = null;
+            currentUserIsAdmin = false;
+            viderCachesLocaux();
+            document.getElementById('auth-username').value = '';
+            document.getElementById('auth-password').value = '';
+            switchScreen('screen-auth');
+        }
+
+        function openAdminComptesModule() {
+            switchScreen('screen-admin-comptes');
+            renderComptesList();
+        }
+
+        async function handleCreateAccount(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-user-id').value.trim();
+            const password = document.getElementById('new-user-pwd').value;
+            const button = e.submitter;
+            if (button) button.disabled = true;
+            try {
+                await api('accounts', 'POST', { name, password });
+                accountsState = await api('accounts');
+                document.getElementById('new-user-id').value = '';
+                document.getElementById('new-user-pwd').value = '';
+                renderComptesList();
+            } catch (error) { alert(error.message); }
+            finally { if (button) button.disabled = false; }
+        }
+
+        function renderComptesList() {
+            const container = document.getElementById('liste-comptes-container');
+            container.innerHTML = '';
+            accountsState.forEach((acc, idx) => {
+                let isKeke = acc.admin === true;
+                container.innerHTML += `
+                    <div class="bg-snck-dark border border-snck-border p-4 rounded-xl flex justify-between items-center text-sm">
+                        <div>
+                            <span class="font-bold text-blue-400">${escapeHtml(acc.id)}</span> 
+                            <span class="text-xs text-gray-500 ml-2">Mot de passe protégé</span>
+                            ${isKeke ? '<span class="ml-3 px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">Admin Principal</span>' : ''}
+                        </div>
+                        ${!isKeke ? `<button onclick="deleteAccount(${idx})" class="px-3 py-1 bg-red-500/10 text-red-400 text-xs rounded-lg hover:bg-red-500/20 cursor-pointer">Supprimer</button>` : ''}
+                    </div>`;
+            });
+        }
+
+        async function deleteAccount(idx) {
+            if (!confirm('Supprimer ce compte conducteur ?')) return;
+            try {
+                await api('accounts', 'DELETE', { name: accountsState[idx].id });
+                accountsState = await api('accounts');
+                renderComptesList();
+            } catch (error) { alert(error.message); }
+        }
+        function escapeHtml(value) {
+            const element = document.createElement('span'); element.textContent = String(value); return element.innerHTML;
+        }
+
+        function sauvegarderStorage(now) {
+            localStorage.setItem('snck_sillons', JSON.stringify(sillonsState));
+            cloudSave(now);
+            rafraichirParc();
+        }
+
+
+        function formaterDateJJMM(dateStr) {
+            if (!dateStr) return '--/--';
+            let parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}`;
+            }
+            return dateStr;
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('fr-FR');
+            document.getElementById('pc-clock').innerText = timeStr;
+            document.getElementById('tel-clock').innerText = timeStr;
+            const hm = timeStr.slice(0, 5);
+            ['pc-cabine-heure', 'tel-cabine-heure'].forEach(id => { const el = document.getElementById(id); if (el && el.innerText !== hm) el.innerText = hm; });
+            if (activeSillonIndex !== null && now.getSeconds() % 10 === 0) calculerHorairesParcours();
+            
+            if (activeSillonIndex !== null && !serviceAtteintTerminus) {
+                const sillonActif = sillonsState[activeSillonIndex];
+                if (sillonActif) {
+                    if (!sillonActif.isStarted) {
+                        calculerRetardAutomatique(activeSillonIndex);
+                    }
+                    verifierHeureDepartAtteinte();
+                }
+                mettreAJourAffichageRetard(); // actualise l'avance/retard en haut des horaires chaque seconde
+                verifierBoutonFinService();
+            }
+        }, 1000);
+
+        
+
+        // ====== Lignes du réseau ======
+        // Ligne 2 : voie unique. ZC = Zone de Croisement, traitée comme une gare (arrêt possible pour croiser).
+        const LIBELLES_GARES = { 'ZC': 'ZC (Zone Croisement)' };
+        const LIGNES = {
+            fontaine: { nom: 'Ligne Fontaine - Ville', ordre: ligneOrdre, temps: tempsTrajetSecondes, voieUnique: false },
+            pavillon: {
+                nom: 'Ligne Hôpital - Pavillon Noir',
+                ordre: ['Hôpital', 'Ville', 'Zoo', 'ZC', 'Pavillon Noir'],
+                temps: {
+                    'Hôpital->Ville': 38.95, 'Ville->Zoo': 25.66, 'Zoo->ZC': 10, 'ZC->Pavillon Noir': 24,
+                    'Ville->Hôpital': 38.95, 'Zoo->Ville': 25.66, 'ZC->Zoo': 10, 'Pavillon Noir->ZC': 24
+                },
+                voieUnique: true
+            }
+        };
+        // Voies possibles par gare sur la ligne Hôpital - Pavillon Noir
+        const VOIES_PAVILLON = {
+            'Hôpital': ['Voie C', 'Voie D'],
+            'Ville': ['Voie C', 'Voie D'],
+            'Zoo': ['Voie A', 'Voie B'],
+            'Pavillon Noir': ['Voie A', 'Voie B']
+        };
+        // Les sillons créés avant l'ajout des lignes n'ont pas de champ "ligne" : ils restent sur Fontaine - Ville.
+        function ligneDe(s) { return LIGNES[s && s.ligne] || LIGNES.fontaine; }
+
+        // ====== Tronçons (un sillon normal = 1 tronçon ; un sillon Trans-Lignes = plusieurs tronçons) ======
+        const COULEUR_LIGNE = { fontaine: 'blue', pavillon: 'violet' };
+        // Tronçons tels que planifiés (sans arrêts exceptionnels)
+        function baseTroncons(s) {
+            if (s && s.ligne === 'trans' && Array.isArray(s.segments) && s.segments.length) return s.segments;
+            return [{ ligne: s.ligne, origine: s.origine, terminus: s.terminus, arretsInter: s.arretsInter || [], arretsDurees: s.arretsDurees || {}, voies: s.voies || {}, voieFontaine: s.voieFontaine, voieVille: s.voieVille }];
+        }
+        // Tronçons effectifs : planifiés + arrêts exceptionnels (s.exceptionnels = { gare: minutes })
+        function troncons(s) {
+            const base = baseTroncons(s), exc = (s && s.exceptionnels) || {}, sup = (s && s.arretsSupprimes) || [];
+            if (!Object.keys(exc).length && !sup.length) return base;
+            return base.map(seg => {
+                const inter = [...(seg.arretsInter || [])], durees = Object.assign({}, seg.arretsDurees || {});
+                routeSeg(seg).slice(1, -1).forEach(g => { if (exc[g] !== undefined && !inter.includes(g)) { inter.push(g); durees[g] = Number(exc[g]) || 0; } });
+                sup.forEach(g => { if (inter.includes(g)) durees[g] = 0; }); // arrêt supprimé : le train passe sans s'arrêter
+                return Object.assign({}, seg, { arretsInter: inter, arretsDurees: durees });
+            });
+        }
+        function eligiblesExc(s) {
+            const out = [];
+            baseTroncons(s).forEach(seg => routeSeg(seg).slice(1, -1).forEach(g => { if (!(seg.arretsInter || []).includes(g) && !out.includes(g)) out.push(g); }));
+            return out;
+        }
+        function nomLigneDe(s) {
+            return s && s.ligne === 'trans' ? 'Trans-Lignes (' + troncons(s).map(g => ligneDe(g).nom).join(' + ') + ')' : ligneDe(s).nom;
+        }
+        function parcoursTexte(s) {
+            if (s.ligne === 'trans') return troncons(s).map(g => garesDesserviesSeg(g).join(' ➔ ')).join('  ‖  ');
+            if (s.exceptionnels && Object.keys(s.exceptionnels).length) return garesDesservies(s).join(' ➔ ');
+            return `${s.origine} ➔ ${s.arretsInter.length ? s.arretsInter.join(' ➔ ') + ' ➔ ' : ''}${s.terminus}`;
+        }
+
+        // ====== Mode Translignes : les arrêts des 2 lignes, on coche, le reste est automatique ======
+        let transSegs = [], transLignes = {}, transDir = 1;
+        function transOrdre(st) { const o = LIGNES[st.ligne].ordre; return st.sens === -1 ? [...o].reverse() : o; }
+        function transSelection(st) { return transOrdre(st).filter(g => st.arrets[g] && st.arrets[g].on); }
+        function transNouveau(ligne) {
+            return { ligne, sens: 1, arrets: {}, exc: {}, voies: {}, voieFontaine: 'Voie A', voieVille: 'Voie A', attente: 1 };
+        }
+        function transSync() {
+            const F = transLignes.fontaine, P = transLignes.pavillon;
+            F.sens = P.sens = transDir;
+            transSegs = transDir === 1 ? [F, P] : [P, F];
+        }
+        function transInit() {
+            transLignes = { fontaine: transNouveau('fontaine'), pavillon: transNouveau('pavillon') };
+            transDir = 1;
+            renderTrans();
+        }
+        function transSetDir(v) { transDir = parseInt(v, 10) === -1 ? -1 : 1; renderTrans(); }
+        function transToggle(i, k, on) {
+            const st = transSegs[i], g = LIGNES[st.ligne].ordre[k];
+            st.arrets[g] = Object.assign(st.arrets[g] || { duree: 1 }, { on });
+            renderTrans();
+        }
+        function transExc(i, k, on) { const st = transSegs[i], g = LIGNES[st.ligne].ordre[k]; st.exc[g] = Object.assign(st.exc[g] || { duree: 1 }, { on }); renderTrans(); }
+        function transExcDuree(i, k, v) { const st = transSegs[i], g = LIGNES[st.ligne].ordre[k]; if (st.exc[g]) st.exc[g].duree = Math.max(0, parseInt(v, 10) || 0); }
+        function transDuree(i, k, v) { const st = transSegs[i], g = LIGNES[st.ligne].ordre[k]; if (st.arrets[g]) st.arrets[g].duree = Math.max(0, parseInt(v, 10) || 0); }
+        function transVoie(i, k, v) { const st = transSegs[i]; st.voies[LIGNES[st.ligne].ordre[k]] = v; }
+        function transVoieF(i, champ, v) { transSegs[i][champ] = v; }
+        function transAttente(i, v) { transSegs[i].attente = Math.max(0, parseInt(v, 10) || 0); }
+
+        function transSegHtml(st, i) {
+            const L = LIGNES[st.ligne], c = COULEUR_LIGNE[st.ligne] || 'blue';
+            const ordre = transOrdre(st), sel = transSelection(st);
+            const first = sel[0], last = sel[sel.length - 1];
+            const prevTerm = i > 0 ? transSelection(transSegs[i - 1]).slice(-1)[0] : null;
+            const lo = L.ordre;
+            const selCls = 'bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white';
+            const rows = ordre.map(g => {
+                const k = lo.indexOf(g), a = st.arrets[g], on = !!(a && a.on);
+                const role = !on || sel.length < 2 ? '' : g === first ? 'Origine' : g === last ? 'Terminus' : '';
+                let extra = '';
+                const pos = ordre.indexOf(g);
+                if (!on && sel.length >= 2 && pos > ordre.indexOf(first) && pos < ordre.indexOf(last)) {
+                    const ex = st.exc[g], exOn = !!(ex && ex.on);
+                    extra += `<label class="text-[10px] text-rose-300 flex items-center gap-1 cursor-pointer"><input type="checkbox" ${exOn ? 'checked' : ''} onchange="transExc(${i},${k},this.checked)" class="rounded bg-snck-dark border-snck-border text-rose-500"> Arrêt exceptionnel</label>`;
+                    if (exOn) extra += `<input type="number" min="0" value="${ex.duree ?? 1}" onchange="transExcDuree(${i},${k},this.value)" class="w-14 ${selCls} text-center"><span class="text-[10px] text-gray-400">min</span>`;
+                }
+                if (on && g !== first && g !== last) extra += `<label class="text-[10px] text-gray-400 flex items-center gap-1">Arrêt <input type="number" min="0" value="${a.duree ?? 1}" onchange="transDuree(${i},${k},this.value)" class="w-14 ${selCls} text-center"> min</label>`;
+                if (on && st.ligne === 'pavillon' && VOIES_PAVILLON[g]) {
+                    const cur = st.voies[g] || VOIES_PAVILLON[g][0];
+                    extra += `<select onchange="transVoie(${i},${k},this.value)" class="${selCls}">${VOIES_PAVILLON[g].map(v => `<option ${v === cur ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                }
+                if (on && st.ligne === 'fontaine' && g === 'Fontaine') {
+                    extra += `<select onchange="transVoieF(${i},'voieFontaine',this.value)" class="${selCls}">${['Voie A', 'Voie B', 'Voie C', 'Voie D', 'Voie E', 'Voie F', 'Voie S1', 'Voie S2'].map(v => `<option ${v === st.voieFontaine ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                }
+                if (on && st.ligne === 'fontaine' && g === 'Ville') {
+                    extra += `<select onchange="transVoieF(${i},'voieVille',this.value)" class="${selCls}">${['Voie A', 'Voie B'].map(v => `<option ${v === st.voieVille ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                }
+                return `<div class="flex items-center justify-between gap-2 flex-wrap p-2.5 rounded-xl border ${on ? `border-${c}-500/40 bg-${c}-500/5` : 'border-snck-border bg-snck-dark'}">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" ${on ? 'checked' : ''} onchange="transToggle(${i},${k},this.checked)" class="rounded bg-snck-dark border-snck-border text-blue-500"> ${escapeHtml(LIBELLES_GARES[g] || g)}${role ? ` <span class="text-[10px] px-1.5 py-0.5 rounded bg-${c}-500/20 text-${c}-300 font-semibold">${role}</span>` : ''}</label>
+                    <div class="flex items-center gap-2">${extra}</div>
+                </div>`;
+            }).join('');
+            let corr = '';
+            if (i > 0) {
+                const ok = !prevTerm || !first || first === prevTerm;
+                corr = `<div class="text-xs rounded-xl border px-3 py-2 flex flex-wrap items-center gap-2 ${ok ? 'border-amber-500/20 bg-amber-500/5 text-amber-300' : 'border-red-500/40 bg-red-500/10 text-red-400'}">
+                    <i class="fa-solid fa-right-left"></i> Correspondance à <b>${escapeHtml(prevTerm || '?')}</b>${ok ? '' : ' : coche aussi ' + escapeHtml(prevTerm || '?') + ' sur cette ligne en premier arrêt (actuellement : ' + escapeHtml(first) + ')'}
+                    <span class="ml-auto flex items-center gap-1 text-gray-300">Temps de correspondance <input type="number" min="0" value="${st.attente ?? 1}" onchange="transAttente(${i},this.value)" class="w-14 ${selCls} text-center"> min</span></div>`;
+            }
+            return `<div class="rounded-2xl border border-${c}-500/30 bg-snck-dark/50 p-4 space-y-3">
+                <div class="text-xs font-bold text-${c}-300 uppercase tracking-wider"><i class="fa-solid fa-train-subway mr-1"></i> ${escapeHtml(L.nom)} <span class="text-gray-400 normal-case font-normal">(${escapeHtml(ordre[0])} ➔ ${escapeHtml(ordre[ordre.length - 1])})</span></div>
+                ${corr}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${rows}</div>
+            </div>`;
+        }
+        function renderTrans() {
+            const c = document.getElementById('trans-segments');
+            if (!c) return;
+            transSync();
+            const F = LIGNES.fontaine.ordre, P = LIGNES.pavillon.ordre;
+            const res = construireSegmentsTrans();
+            const apercu = res.erreur
+                ? `<div class="text-xs rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-300 px-3 py-2"><i class="fa-solid fa-circle-info mr-1"></i> ${escapeHtml(res.erreur)}</div>`
+                : `<div class="text-xs rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-300 px-3 py-2"><i class="fa-solid fa-route mr-1"></i> ${escapeHtml(res.segments.map(g => garesDesserviesSeg(g).join(' ➔ ')).join('  ‖  '))}</div>`;
+            c.innerHTML = `<div>
+                    <label class="block text-xs text-gray-400 mb-1">Sens du train</label>
+                    <select onchange="transSetDir(this.value)" class="w-full bg-snck-card border border-snck-border rounded-lg px-3 py-2 text-xs text-white">
+                        <option value="1" ${transDir === 1 ? 'selected' : ''}>${escapeHtml(F[0])} ➔ ${escapeHtml(P[P.length - 1])} (ligne 1 puis ligne 2)</option>
+                        <option value="-1" ${transDir === -1 ? 'selected' : ''}>${escapeHtml(P[P.length - 1])} ➔ ${escapeHtml(F[0])} (ligne 2 puis ligne 1)</option>
+                    </select>
+                </div>` + transSegs.map(transSegHtml).join('') + apercu;
+        }
+        function construireSegmentsTrans() {
+            if (!transLignes.fontaine) transLignes = { fontaine: transNouveau('fontaine'), pavillon: transNouveau('pavillon') };
+            transSync();
+            const segments = [];
+            for (let i = 0; i < transSegs.length; i++) {
+                const st = transSegs[i], sel = transSelection(st);
+                if (sel.length < 2) return { erreur: `${LIGNES[st.ligne].nom} : coche au moins 2 arrêts (dont la gare de correspondance).` };
+                if (i > 0 && sel[0] !== segments[i - 1].terminus) return { erreur: `${LIGNES[st.ligne].nom} : le 1er arrêt coché doit être ${segments[i - 1].terminus} (gare de correspondance, dernier arrêt de la ligne précédente).` };
+                const inter = sel.slice(1, -1), arretsDurees = {};
+                inter.forEach(g => { arretsDurees[g] = Math.max(0, parseInt(st.arrets[g].duree, 10) || 0); });
+                const voies = {};
+                if (st.ligne === 'pavillon') sel.forEach(g => { if (VOIES_PAVILLON[g]) voies[g] = st.voies[g] || VOIES_PAVILLON[g][0]; });
+                const seg = { ligne: st.ligne, origine: sel[0], terminus: sel[sel.length - 1], arretsInter: inter, arretsDurees, voies, voieFontaine: st.voieFontaine, voieVille: st.voieVille };
+                if (i > 0) seg.attenteOrigine = Math.max(0, parseInt(st.attente, 10) || 0);
+                segments.push(seg);
+            }
+            const exceptionnels = {};
+            transSegs.forEach(st => {
+                const sel = transSelection(st); if (sel.length < 2) return;
+                const ordre = transOrdre(st), pf = ordre.indexOf(sel[0]), pl = ordre.indexOf(sel[sel.length - 1]);
+                Object.keys(st.exc || {}).forEach(g => {
+                    const pos = ordre.indexOf(g);
+                    if (st.exc[g].on && pos > pf && pos < pl && !sel.includes(g)) exceptionnels[g] = Math.max(0, parseInt(st.exc[g].duree, 10) || 0);
+                });
+            });
+            return { segments, exceptionnels };
+        }
+
+        function changerLigne() {
+            const trans = document.getElementById('sillon-ligne').value === 'trans';
+            document.getElementById('bloc-monoligne').style.display = trans ? 'none' : '';
+            document.getElementById('bloc-trans').style.display = trans ? 'block' : 'none';
+            if (trans) { if (!transSegs.length) transInit(); else renderTrans(); return; }
+            const L = ligneDe({ ligne: document.getElementById('sillon-ligne').value });
+            const opts = L.ordre.map(g => `<option value="${g}">${escapeHtml(LIBELLES_GARES[g] || g)}</option>`).join('');
+            const o = document.getElementById('sillon-origine'), t = document.getElementById('sillon-terminus');
+            o.innerHTML = opts; t.innerHTML = opts;
+            o.value = L.ordre[0]; t.value = L.ordre[L.ordre.length - 1];
+            document.getElementById('arrets-container').innerHTML = L.ordre.slice(1, -1).map(g => `
+                <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-inter" value="${g}" class="rounded bg-snck-dark border-snck-border text-blue-500"> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
+                    <input type="number" id="arret-duree-${g}" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                </div>`).join('');
+            document.getElementById('arrets-exc-container').innerHTML = L.ordre.slice(1, -1).map(g => `
+                <div class="flex items-center justify-between bg-snck-dark p-3 rounded-xl border border-snck-border">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" name="arret-exc" value="${g}" class="rounded bg-snck-dark border-snck-border text-rose-500"> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
+                    <input type="number" id="arret-exc-duree-${g}" min="0" value="1" class="w-20 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center">
+                </div>`).join('');
+            updateVoiesOptions();
+        }
+
+        function updateVoiesOptions() {
+            if (document.getElementById('sillon-ligne').value === 'trans') return;
+            const ligneOrdre = ligneDe({ ligne: document.getElementById('sillon-ligne').value }).ordre;
+            const origine = document.getElementById('sillon-origine').value;
+            const terminus = document.getElementById('sillon-terminus').value;
+            const ligneCle = document.getElementById('sillon-ligne').value;
+            const estPavillon = ligneCle === 'pavillon';
+            document.getElementById('container-voie-fontaine').style.display = (!estPavillon && (origine === 'Fontaine' || terminus === 'Fontaine')) ? 'block' : 'none';
+            document.getElementById('container-voie-ville').style.display = (!estPavillon && (() => { const a = ligneOrdre.indexOf(origine), b = ligneOrdre.indexOf(terminus), v = ligneOrdre.indexOf('Ville'); return v >= Math.min(a, b) && v <= Math.max(a, b); })()) ? 'block' : 'none';
+            const iO = ligneOrdre.indexOf(origine), iT = ligneOrdre.indexOf(terminus), lo = Math.min(iO, iT), hi = Math.max(iO, iT);
+            // Ligne Hôpital - Pavillon Noir : choix de la voie dans chaque gare du parcours (ZC = croisement, sans voie)
+            document.getElementById('container-voies-pavillon').style.display = estPavillon ? 'grid' : 'none';
+            Object.keys(VOIES_PAVILLON).forEach(g => {
+                const i = ligneOrdre.indexOf(g);
+                document.getElementById('cv-pav-' + g).style.display = (estPavillon && i >= lo && i <= hi) ? 'block' : 'none';
+            });
+            document.querySelectorAll('input[name="arret-inter"], input[name="arret-exc"]').forEach(cb => {
+                const i = ligneOrdre.indexOf(cb.value), ok = i > lo && i < hi;
+                cb.disabled = !ok; if (!ok) cb.checked = false;
+                cb.closest('div.flex').classList.toggle('opacity-40', !ok);
+            });
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+            const b = document.getElementById('cloud-status-badge');
+            if (b) b.style.display = screenId === 'screen-cabine-tel' ? 'none' : '';
+        }
+
+        function openCreateSillonModule() {
+            currentPlatform = 'pc';
+            remplirMaterielsSillon();
+            switchScreen('screen-create-sillon');
+            changerLigne();
+            updateVoiesOptions();
+            renderSillons();
+        }
+
+        function openConduireModule(platform) {
+            currentPlatform = platform || 'pc';
+            switchScreen('screen-conduire');
+            renderSillonsConduite();
+        }
+
+        function retourMenuConduite() {
+            if (currentPlatform === 'tel') {
+                switchScreen('screen-tel-menu');
+            } else {
+                switchScreen('screen-pc-menu');
+            }
+        }
+
+        function handleCreateSillon(e) {
+            e.preventDefault();
+            const numero = document.getElementById('sillon-numero').value.trim();
+            const dateBrute = document.getElementById('sillon-date').value;
+            const dateJJMM = formaterDateJJMM(dateBrute);
+            const depart = document.getElementById('sillon-depart-heure').value;
+            const mat = parcState.find(m => m.id === document.getElementById('sillon-composition').value);
+            if (!mat || statutMateriel(mat) !== 'Disponible') { alert("Ce matériel n'est plus disponible. Choisissez-en un autre."); rafraichirParc(); return; }
+            const composition = mat.numero + (mat.type ? ' - ' + mat.type : ''), materielId = mat.id, materielNumero = mat.numero;
+            const origine = document.getElementById('sillon-origine').value;
+            const terminus = document.getElementById('sillon-terminus').value;
+            const voieFontaine = document.getElementById('voie-fontaine').value;
+            const voieVille = document.getElementById('voie-ville').value;
+            const ligne = document.getElementById('sillon-ligne').value;
+            const ligneOrdre = ligneDe({ ligne }).ordre;
+            if (ligne === 'trans') {
+                const res = construireSegmentsTrans();
+                if (res.erreur) { alert(res.erreur); return; }
+                if (sillonsState.some(x => String(x.numero).toLowerCase() === numero.toLowerCase() && x.dateBrute === dateBrute)) { alert('Un sillon avec ce numéro existe déjà à cette date.'); return; }
+                const segs = res.segments;
+                sillonsState.push({
+                    id: uuid(), numero, ligne: 'trans', dateBrute, dateJJMM, depart, composition, materielId, materielNumero,
+                    origine: segs[0].origine, terminus: segs[segs.length - 1].terminus, voieFontaine: '', voieVille: '', voies: {},
+                    segments: segs, exceptionnels: res.exceptionnels, arretsInter: [], arretsDurees: {}, statut: 'Libre', retard: 0, retardManuel: 0, isStarted: false, motifRetard: ''
+                });
+                sauvegarderStorage();
+                document.getElementById('form-sillon').reset();
+                document.getElementById('sillon-ligne').value = 'trans';
+                transSegs = [];
+                changerLigne();
+                renderSillons();
+                return;
+            }
+            if (origine === terminus) { alert("L'origine et le terminus doivent être différents."); return; }
+            if (sillonsState.some(x => String(x.numero).toLowerCase() === numero.toLowerCase() && x.dateBrute === dateBrute)) { alert('Un sillon avec ce numéro existe déjà à cette date.'); return; }
+            const iO = ligneOrdre.indexOf(origine), iT = ligneOrdre.indexOf(terminus), lo = Math.min(iO, iT), hi = Math.max(iO, iT);
+
+            const checkboxes = document.querySelectorAll('input[name="arret-inter"]:checked');
+            let arretsInter = [];
+            let arretsDurees = {};
+            checkboxes.forEach(cb => {
+                const i = ligneOrdre.indexOf(cb.value); if (i <= lo || i >= hi) return;
+                arretsInter.push(cb.value);
+                arretsDurees[cb.value] = parseInt(document.getElementById(`arret-duree-${cb.value}`).value) || 0;
+            });
+
+            const exceptionnels = {};
+            document.querySelectorAll('input[name="arret-exc"]:checked').forEach(cb => {
+                const i = ligneOrdre.indexOf(cb.value); if (i <= lo || i >= hi || arretsInter.includes(cb.value)) return;
+                exceptionnels[cb.value] = parseInt(document.getElementById(`arret-exc-duree-${cb.value}`).value) || 0;
+            });
+
+            const voies = {};
+            if (ligne === 'pavillon') {
+                Object.keys(VOIES_PAVILLON).forEach(g => {
+                    const i = ligneOrdre.indexOf(g);
+                    if (i >= lo && i <= hi) voies[g] = document.getElementById('voie-pav-' + g).value;
+                });
+            }
+
+            sillonsState.push({
+                id: uuid(), numero, ligne, dateBrute, dateJJMM, depart, composition, materielId, materielNumero, origine, terminus, voieFontaine, voieVille, voies,
+                arretsInter, arretsDurees, exceptionnels, statut: 'Libre', retard: 0, retardManuel: 0, isStarted: false, motifRetard: ''
+            });
+
+            sauvegarderStorage();
+            document.getElementById('form-sillon').reset();
+            document.getElementById('sillon-ligne').value = ligne;
+            changerLigne();
+            updateVoiesOptions();
+            renderSillons();
+        }
+
+        function renderSillons() {
+            const container = document.getElementById('liste-sillons');
+            if (!container) return;
+            document.getElementById('sillons-count').innerText = `${sillonsState.length} sillon${sillonsState.length > 1 ? 's' : ''} actif${sillonsState.length > 1 ? 's' : ''}`;
+            if (sillonsState.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 bg-snck-card border border-snck-border rounded-2xl text-gray-400">Aucun sillon prévu.</div>`;
+                return;
+            }
+            const btn = 'px-3 py-1.5 text-xs rounded-lg cursor-pointer border ';
+            container.innerHTML = sillonsState.map((sillon, index) => {
+                const supprime = sillon.statut === 'Supprimé' || sillon.serviceSupprime;
+                const ecart = retardA(sillon, sillon.origine);
+                const aEcart = aRetardsGares(sillon) || ecart !== 0;
+                const exc = Object.keys(sillon.exceptionnels || {}), sup = sillon.arretsSupprimes || [];
+                const badge = supprime ? 'bg-red-500/10 text-red-400 border-red-500/20' : sillon.statut === 'En Service' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                return `
+                    <div class="bg-snck-card border border-snck-border rounded-2xl p-5 flex flex-col md:flex-row md:justify-between md:items-center gap-4 ${supprime ? 'opacity-70' : ''}">
+                        <div class="space-y-1 text-sm">
+                            <div>
+                                <span class="px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono font-bold ${supprime ? 'line-through' : ''}">${escapeHtml(sillon.numero)}</span>
+                                <span class="ml-2 font-semibold text-indigo-300">[${escapeHtml(sillon.dateJJMM)}]</span>
+                                <span class="ml-2 font-semibold">Départ : ${escapeHtml(sillon.depart)}</span>
+                                <span class="ml-3 px-2 py-0.5 rounded text-xs border ${badge}">${escapeHtml(supprime ? 'Service supprimé' : sillon.statut)}</span>
+                            </div>
+                            <div class="text-xs text-gray-400">Composition : ${escapeHtml(sillon.composition)}</div>
+                            <div class="text-xs text-gray-400">Ligne : ${escapeHtml(nomLigneDe(sillon))}</div>
+                            <div class="text-xs text-gray-400">Parcours : ${escapeHtml(parcoursTexte(sillon))}</div>
+                            ${aEcart ? `<div class="text-xs font-semibold ${ecart > 0 ? 'text-amber-400' : ecart < 0 ? 'text-blue-400' : 'text-gray-400'}">Écart : ${aRetardsGares(sillon) ? 'variable selon les gares' : escapeHtml(fmtEcart(ecart))}</div>` : ''}
+                            ${exc.length ? `<div class="text-xs text-rose-400">Arrêt exceptionnel : ${escapeHtml(exc.join(', '))}</div>` : ''}
+                            ${sup.length ? `<div class="text-xs text-red-500">Arrêt supprimé : ${escapeHtml(sup.join(', '))}</div>` : ''}
+                        </div>
+                        <div class="flex flex-wrap md:justify-end gap-2 md:max-w-sm">
+                            <button onclick="ouvrirControle(openRetardModal, ${index})" class="${btn}bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20"><i class="fa-solid fa-clock mr-1"></i>Retard / avance</button>
+                            <button onclick="ouvrirControle(openArretExcModal, ${index})" class="${btn}bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20"><i class="fa-solid fa-circle-exclamation mr-1"></i>Arrêt exceptionnel</button>
+                            <button onclick="ouvrirControle(openArretSupModal, ${index})" class="${btn}bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"><i class="fa-solid fa-circle-xmark mr-1"></i>Supprimer un arrêt</button>
+                            ${supprime
+                                ? `<button onclick="retablirService(${index})" class="${btn}bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"><i class="fa-solid fa-rotate-left mr-1"></i>Rétablir le service</button>`
+                                : `<button onclick="supprimerServiceListe(${index})" class="${btn}bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"><i class="fa-solid fa-ban mr-1"></i>Supprimer le service</button>`}
+                            <button onclick="deleteSillon(${index})" class="${btn}bg-gray-500/10 border-gray-500/20 text-gray-300 hover:bg-gray-500/20"><i class="fa-solid fa-trash mr-1"></i>Effacer</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function supprimerServiceListe(index) {
+            const sillon = sillonsState[index]; if (!sillon) return;
+            if (!confirm('Supprimer le service ' + sillon.numero + ' ? Il restera visible jusqu\'à son heure d\'arrivée, marqué comme supprimé.')) return;
+            sillon.statut = 'Supprimé'; sillon.serviceSupprime = true;
+            sauvegarderStorage(true);
+            renderSillons();
+        }
+        function retablirService(index) {
+            const sillon = sillonsState[index]; if (!sillon) return;
+            if (sillon.materielId && sillonsState.some((x, i) => i !== index && x.materielId === sillon.materielId && !x.serviceSupprime && x.statut !== 'Supprimé')) {
+                alert('Le matériel ' + sillon.materielNumero + ' est désormais affecté à un autre service : il est retiré de ce service rétabli.');
+                sillon.materielId = null; sillon.composition = '— (non affecté)';
+            }
+            sillon.serviceSupprime = false; sillon.statut = 'Libre'; delete sillon.conducteur;
+            sauvegarderStorage(true);
+            renderSillons();
+        }
+
+        function renderSillonsConduite() {
+            const container = document.getElementById('liste-sillons-conduite');
+            if (sillonsState.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 bg-snck-dark border border-snck-border rounded-2xl text-gray-400">Aucun sillon disponible.</div>`;
+                return;
+            }
+            container.innerHTML = '';
+            sillonsState.forEach((sillon, index) => {
+                let isOccuped = (sillon.statut === 'En Service');
+                let isSupprime = (sillon.statut === 'Supprimé' || sillon.serviceSupprime);
+                let parcours = parcoursTexte(sillon);
+
+                let badgeStatut = '';
+                let opacityClass = '';
+                let textBarre = '';
+                let btnAction = '';
+
+                if (isSupprime) {
+                    badgeStatut = `<span class="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20 font-bold">Service supprimé</span>`;
+                    opacityClass = 'opacity-40';
+                    textBarre = 'line-through';
+                    btnAction = `<button disabled class="px-4 py-2 rounded-xl bg-gray-800 text-gray-600 cursor-not-allowed text-xs font-semibold"><i class="fa-solid fa-ban mr-1"></i> Indisponible</button>`;
+                } else if (isOccuped) {
+                    badgeStatut = `<span class="px-2 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">En Service</span>`;
+                    opacityClass = (sillon.conducteur || currentUser) === currentUser ? '' : 'opacity-50';
+                    btnAction = (sillon.conducteur || currentUser) === currentUser
+                        ? `<button onclick="reprendreService(${index})" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white cursor-pointer text-xs font-semibold">Reprendre</button>`
+                        : `<button disabled class="px-4 py-2 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed text-xs font-semibold">Occupé</button>`;
+                } else {
+                    badgeStatut = `<span class="px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">Libre</span>`;
+                    btnAction = `<button onclick="ouvrirPriseServiceModal(${index})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer text-xs font-semibold">Je fais ce service</button>`;
+                }
+
+                container.innerHTML += `
+                    <div class="bg-snck-dark border border-snck-border rounded-2xl p-4 flex justify-between items-center ${opacityClass}">
+                        <div class="space-y-1 text-sm">
+                            <div>
+                                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-bold ${textBarre}">${escapeHtml(sillon.numero)}</span>
+                                <span class="ml-2 text-indigo-300 font-semibold ${textBarre}">[${escapeHtml(sillon.dateJJMM)}]</span>
+                                <span class="ml-2 font-semibold ${textBarre}">Départ : ${escapeHtml(sillon.depart)}</span>
+                                ${badgeStatut}
+                            </div>
+                            <div class="text-xs text-gray-400 ${textBarre}">Parcours : ${escapeHtml(parcours)}</div>
+                        </div>
+                        ${btnAction}
+                    </div>`;
+            });
+        }
+
+        function ouvrirPriseServiceModal(index) {
+            pendingPriseIndex = index;
+            document.getElementById('prise-service-details').innerText = `Sillon ${sillonsState[index].numero} (Date: ${sillonsState[index].dateJJMM} - ${sillonsState[index].origine} ➔ ${sillonsState[index].terminus})`;
+            document.getElementById('modal-prise-service').classList.remove('hidden');
+        }
+
+        function closePriseServiceModal() {
+            document.getElementById('modal-prise-service').classList.add('hidden');
+            pendingPriseIndex = null;
+        }
+
+        function confirmerPriseService() {
+            if (pendingPriseIndex === null) return;
+            const index = pendingPriseIndex, s = sillonsState[index];
+            if (!s || s.statut !== 'Libre') { closePriseServiceModal(); alert('Ce service n’est plus disponible.'); return; }
+            s.statut = 'En Service'; s.conducteur = currentUser;
+            closePriseServiceModal();
+            sauvegarderStorage(true);
+            entrerCabine(index);
+        }
+
+        function determinerVoieGare(gare, sillon) {
+            if (gare === '*Stockage' || gare === '*Dépot') return '';
+            if (sillon.ligne === 'pavillon') return (sillon.voies && sillon.voies[gare]) || (VOIES_PAVILLON[gare] ? VOIES_PAVILLON[gare][0] : '');
+            if (gare === 'Fontaine') return sillon.voieFontaine || 'Voie A';
+            if (gare === 'Ville') return sillon.voieVille || 'Voie A';
+            return (ligneOrdre.indexOf(sillon.terminus) > ligneOrdre.indexOf(sillon.origine)) ? 'Voie A' : 'Voie B';
+        }
+
+// ====== Retards par gare + perturbations en cabine ======
+// s.retardsGares = { "Mairie": { min: -7, motif: "..." }, ... } : écart (en min) valable à partir de cette gare
+// jusqu'à la prochaine gare renseignée. Sans retardsGares, l'ancien système (retardAuto + retardManuel) s'applique.
+function routeSeg(g) {
+    const o = ligneDe(g).ordre, a = o.indexOf(g.origine), b = o.indexOf(g.terminus);
+    if (a < 0 || b < 0) return [];
+    return b >= a ? o.slice(a, b + 1) : o.slice(b, a + 1).reverse();
+}
+function garesDesserviesSeg(g) {
+    const r = routeSeg(g);
+    return r.filter((x, i) => i === 0 || i === r.length - 1 || (g.arretsInter || []).includes(x));
+}
+// Les gares de correspondance (fin d'un tronçon = début du suivant) ne sont comptées qu'une fois
+function concatSansDoublon(listes) {
+    const out = [];
+    listes.forEach(l => l.forEach(x => { if (out[out.length - 1] !== x) out.push(x); }));
+    return out;
+}
+function routeDe(s) { return concatSansDoublon(troncons(s).map(routeSeg)); }
+function garesDesservies(s) { return concatSansDoublon(troncons(s).map(garesDesserviesSeg)); }
+function aRetardsGares(s) { return !!(s && s.retardsGares && Object.keys(s.retardsGares).length); }
+function retardAutoDe(s) {
+    return s.retardAuto !== undefined ? s.retardAuto : Math.max(0, (s.retard || 0) - (s.retardManuel || 0));
+}
+function retardA(s, gare) {
+    if (!aRetardsGares(s)) return retardAutoDe(s) + (Number(s.retardManuel) || 0);
+    let cur = retardAutoDe(s);
+    for (const g of routeDe(s)) {
+        const p = s.retardsGares[g];
+        if (p && Number.isFinite(Number(p.min))) cur = Number(p.min);
+        if (g === gare) break;
+    }
+    return cur;
+}
+function motifRetardA(s, gare) {
+    let cur = s.motifRetard || '';
+    if (aRetardsGares(s)) {
+        for (const g of routeDe(s)) {
+            const p = s.retardsGares[g];
+            if (p && Number.isFinite(Number(p.min))) cur = p.motif || s.motifRetard || '';
+            if (g === gare) break;
+        }
+    }
+    return retardA(s, gare) !== 0 ? cur : '';
+}
+const fmtEcart = n => (n > 0 ? '+' : '') + n + ' min';
+
+const SECTIONS_PERTURBATION = {
+    'Section Fontaine - Mairie': ['Fontaine', 'Mairie'],
+    'Section Mairie - Hôpital': ['Mairie', 'Hôpital'],
+    'Section Hôpital - Ville': ['Hôpital', 'Ville']
+};
+function perturbationConcerne(p, s) {
+    const sec = SECTIONS_PERTURBATION[p.ligne];
+    if (!sec) return true; // « Toute la ligne »
+    if (s.ligne === 'trans') return troncons(s).some(g => perturbationConcerne(p, g));
+    const route = routeDe(s);
+    if (s.ligne === 'pavillon') return route.includes(sec[0]) && route.includes(sec[1]);
+    const o = LIGNES.fontaine.ordre, idx = route.map(g => o.indexOf(g)).filter(i => i >= 0);
+    if (!idx.length) return false;
+    return Math.max(Math.min(...idx), o.indexOf(sec[0])) < Math.min(Math.max(...idx), o.indexOf(sec[1]));
+}
+function renderPerturbationsCab(sillon) {
+    ['pc-cabine-perturbations', 'tel-cabine-perturbations'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const liste = (perturbationsState || []).filter(p => p && p.actif !== false);
+        if (!sillon || liste.length === 0) {
+            el.innerHTML = 'Aucune perturbation signalée';
+            return;
+        }
+        const items = liste.map(p => ({ p, concerne: perturbationConcerne(p, sillon) }))
+            .sort((a, b) => (b.concerne - a.concerne) || ((b.p.type === 'Interruption') - (a.p.type === 'Interruption')));
+        el.innerHTML = '<div class="text-xs font-bold text-gray-300 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation text-red-400 mr-1"></i> Perturbations (' + items.length + ')</div>' +
+            items.map(({ p, concerne }) => {
+                const c = p.type === 'Interruption' ? 'red' : 'amber';
+                return `<div class="rounded-xl border border-${c}-500/${concerne ? '40' : '15'} bg-${c}-500/${concerne ? '10' : '5'} px-3 py-2 ${concerne ? '' : 'opacity-60'}">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] bg-${c}-500/20 text-${c}-400 border border-${c}-500/30 font-bold uppercase">${escapeHtml(p.type || 'Perturbation')}</span>
+                        <span class="font-bold text-sm text-white">${escapeHtml(p.nom || '')}</span>
+                    </div>
+                    <div class="text-[11px] text-gray-400 mt-1">
+                        <i class="fa-solid fa-route mr-1"></i>${escapeHtml(p.ligne || 'Toute la ligne')}
+                        ${p.heureFin ? ' | <i class="fa-solid fa-clock mr-1"></i>Fin prévue : ' + escapeHtml(p.heureFin) : ''}
+                        ${concerne ? ' | <b class="text-' + c + '-400">Concerne votre parcours</b>' : ' | Hors de votre parcours'}
+                    </div>
+                </div>`;
+            }).join('');
+    });
+}
+
+function etapeHtml(e, sillon, tel, c) {
+    const retG = retardA(sillon, e.gare), motifG = motifRetardA(sillon, e.gare);
+    const arretTxt = e.sup ? '' : e.attente ? `${e.attente} min de correspondance` : (e.arretMin ? `${e.arretMin} min d'arrêt` : '');
+    const dev = (retG > 0 ? '+' : '−') + Math.abs(retG) + ' min';
+    const etat = e.sup ? ['Supprimé', 'sv-red'] : e.cur ? [retG ? dev : "À l'heure", 'sv-cur'] : e.pass ? [retG ? dev : "À l'heure", 'sv-ok'] : retG ? [dev, 'sv-late'] : ['', ''];
+    const arr = e.idx0 ? '–' : e.timeReel, dep = e.idx0 ? e.timeReel : e.fin ? '–' : (e.depReel || e.timeReel);
+    const theo = e.timeTheo !== e.timeReel ? `<s>${e.timeTheo}</s>` : '';
+    const sub = [e.voie, arretTxt, motifG].filter(Boolean).map(escapeHtml).join(' · ');
+    const tags = (e.exc && !e.sup ? '<span class="sv-tag sv-tag-rose">Arrêt exceptionnel</span>' : '') + (e.sup ? '<span class="sv-tag sv-tag-red">Arrêt supprimé</span>' : '');
+    return `<div class="sv-row ${e.cur ? 'sv-r-cur' : ''}">
+        <div class="sv-tl"><i class="sv-dot ${e.cur ? 'sv-d-cur' : e.pass ? 'sv-d-ok' : ''} ${e.idx0 && e.si === 0 ? 'sv-d-big' : ''}"></i></div>
+        <div class="sv-gare"><b class="${e.sup ? 'line-through' : ''}">${escapeHtml(e.gare)}</b>${tags}${sub ? `<small>${sub}</small>` : ''}</div>
+        <div class="sv-t ${e.sup ? 'line-through' : ''}">${e.idx0 ? '–' : theo + arr}</div>
+        <div class="sv-t ${e.sup ? 'line-through' : ''}">${e.idx0 ? theo + dep : dep}</div>
+        <div class="sv-etat ${etat[1]}">${etat[0]}</div>
+    </div>`;
+}
+
+function calculerHorairesParcours() {
+    if (activeSillonIndex === null) return [];
+    const sillon = sillonsState[activeSillonIndex];
+    const [h, m] = sillon.depart.split(':').map(Number);
+    const baseSec = (h * 60 + m) * 60;
+    const fmt = t => `${String(Math.floor(t / 3600) % 24).padStart(2, '0')}:${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}`;
+    const segs = troncons(sillon);
+
+    // Étapes desservies, tronçon par tronçon (un sillon Trans-Lignes en a plusieurs)
+    let sec = 0;
+    const etapes = [];
+    segs.forEach((seg, si) => {
+        const L = ligneDe(seg), ordre = L.ordre, temps = L.temps;
+        const iO = ordre.indexOf(seg.origine), iT = ordre.indexOf(seg.terminus);
+        const direction = iT > iO ? 1 : -1; // sens inverse (ex : Ville -> *Dépot) : on retourne la liste de gares
+        const sous = direction === 1 ? ordre.slice(iO, iT + 1) : ordre.slice(iT, iO + 1).reverse();
+        const inter = seg.arretsInter || [], durees = seg.arretsDurees || {};
+        sous.forEach((gare, idx) => {
+            let attente = 0;
+            if (idx > 0) {
+                const prev = sous[idx - 1];
+                sec += temps[direction === 1 ? `${prev}->${gare}` : `${gare}->${prev}`] || 0;
+                if (inter.includes(prev)) sec += (durees[prev] || 0) * 60;
+            } else if (si > 0) {
+                attente = Number(seg.attenteOrigine) || 0; // correspondance à la gare de changement de ligne
+                sec += attente * 60;
+            }
+            const isOT = idx === 0 || idx === sous.length - 1;
+            if (!(isOT || inter.includes(gare))) return;
+            etapes.push({
+                si, gare, isOT, attente, exc: !isOT && !!(sillon.exceptionnels && sillon.exceptionnels[gare] !== undefined), sup: (sillon.arretsSupprimes || []).includes(gare),
+                voie: determinerVoieGare(gare, seg),
+                arretMin: (!isOT && durees[gare]) ? durees[gare] : 0,
+                timeTheo: fmt(baseSec + sec),
+                timeReel: fmt(baseSec + sec + retardA(sillon, gare) * 60),
+                idx0: idx === 0, fin: idx === sous.length - 1, ts: departTs(sillon) + (sec + retardA(sillon, gare) * 60) * 1000
+            });
+            { const e = etapes[etapes.length - 1], att = (e.isOT || e.sup) ? 0 : e.arretMin;
+              e.depReel = att ? fmt(baseSec + sec + att * 60 + retardA(sillon, gare) * 60) : null; e.tsDep = e.ts + att * 60000; }
+        });
+    });
+
+    // État de chaque gare : passée (verte) / en cours (orange) / à venir — seulement une fois le service commencé
+    etapes.forEach(e => { e.pass = !!sillon.isStarted && Date.now() >= e.tsDep; });
+    const courante = sillon.isStarted ? etapes.find(e => !e.pass) : null; if (courante) courante.cur = true;
+    heureArriveeFinaleReelle = etapes[etapes.length - 1].timeReel;
+    heureArriveeFinaleTs = departTs(sillon) + (sec + retardA(sillon, sillon.terminus) * 60) * 1000;
+
+    if (currentPlatform !== 'tel') {
+        const depSec = baseSec + retardA(sillon, sillon.origine) * 60;
+        document.getElementById('pc-cabine-horaires').innerText = `${fmt(depSec)} ➔ ${heureArriveeFinaleReelle}`;
+    }
+
+    const tel = currentPlatform === 'tel';
+    const container = document.getElementById(tel ? 'tel-cabine-parcours-list' : 'pc-cabine-parcours-list');
+    if (sillon.ligne !== 'trans') {
+        container.className = 'sv-list';
+        container.innerHTML = etapes.map(e => etapeHtml(e, sillon, tel, tel ? 'indigo' : 'emerald')).join('');
+    } else {
+        // Trans-Lignes : une ligne (bloc) par tronçon, avec ses arrêts, les unes sous les autres
+        container.className = 'space-y-5';
+        container.innerHTML = segs.map((seg, si) => {
+            const c = COULEUR_LIGNE[seg.ligne] || 'blue';
+            const items = etapes.filter(e => e.si === si).map(e => etapeHtml(e, sillon, tel, c)).join('');
+            const corr = si > 0 ? `<div class="text-[11px] font-semibold text-amber-400 mb-3"><i class="fa-solid fa-right-left mr-1"></i> Correspondance à ${escapeHtml(seg.origine)}</div>` : '';
+            return `<div>${corr}
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    <span class="px-2.5 py-1 rounded-lg bg-${c}-500/15 text-${c}-300 border border-${c}-500/30 text-xs font-bold"><i class="fa-solid fa-train-subway mr-1"></i> ${escapeHtml(ligneDe(seg).nom)}</span>
+                    <span class="text-[11px] text-gray-400">${escapeHtml(garesDesserviesSeg(seg).join(' ➔ '))}</span>
+                </div>
+                <div class="sv-list">${items}</div>
+            </div>`;
+        }).join('');
+    }
+    renderPerturbationsCab(sillon);
+    return etapes.map(e => e.timeReel);
+}
+        function calculerRetardAutomatique(index) {
+            const s = sillonsState[index];
+            if (!s || s.isStarted || serviceAtteintTerminus) return;
+            const auto = Math.max(0, Math.floor((Date.now() - departTs(s)) / 60000));
+            const ancienAuto = s.retardAuto;
+            s.retardAuto = auto;
+            const r = retardA(s, s.origine);
+            if (r === s.retard && auto === ancienAuto) return;
+            s.retard = r;
+            sauvegarderStorage();
+            if (index === activeSillonIndex) { calculerHorairesParcours(); mettreAJourAffichageRetard(); }
+        }
+
+        function mettreAJourAffichageRetard() {
+            if (activeSillonIndex === null) return;
+            const sillon = sillonsState[activeSillonIndex];
+            let txt, cls;
+            if (aRetardsGares(sillon)) {
+                txt = garesDesservies(sillon).map(g => `${g} ${retardA(sillon, g) > 0 ? '+' : ''}${retardA(sillon, g)}`).join(' · ');
+                const fin = retardA(sillon, sillon.terminus);
+                cls = fin > 0 ? 'amber' : fin < 0 ? 'blue' : 'emerald';
+            } else {
+                const totalRetard = sillon.retard || 0;
+                if (totalRetard > 0) { cls = 'amber'; txt = `+${totalRetard} min (Retard)`; }
+                else if (totalRetard < 0) { cls = 'blue'; txt = `${totalRetard} min (Avance)`; }
+                else { cls = 'emerald'; txt = "+0 min (À l'heure)"; }
+            }
+            const pcRetard = document.getElementById('pc-cabine-retard');
+            if (pcRetard) { pcRetard.className = `text-xs font-semibold text-${cls}-400 mt-1 max-w-xs`; pcRetard.innerText = txt; }
+            const telRetard = document.getElementById('tel-cabine-retard');
+            if (telRetard) { telRetard.className = `text-[11px] font-semibold text-${cls}-400 mt-0.5`; telRetard.innerText = txt; }
+        }
+
+        // Heure de départ effective : en cas d'avance à l'origine, le train peut partir plus tôt
+        function departEffectifTs(s) { return departTs(s) + Math.min(0, retardA(s, s.origine)) * 60000; }
+        function hhmm(ts) { const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+        function verifierHeureDepartAtteinte() {
+            const sillon = getActif();
+            if (!sillon || sillon.isStarted) return;
+            const ok = Date.now() >= departEffectifTs(sillon);
+            const st = ok ? 'go' : 'wait:' + sillon.dateBrute + sillon.depart + ':' + departEffectifTs(sillon);
+            document.querySelectorAll('.btn-commencer-conduite').forEach(btn => {
+                if (btn.dataset.st === st) return;
+                btn.dataset.st = st;
+                const pc = btn.id === 'btn-commencer-pc';
+                if (ok) {
+                    btn.removeAttribute('disabled');
+                    btn.className = "btn-commencer-conduite sv-btn sv-go";
+                    btn.innerHTML = `<i class="fa-solid fa-play"></i> Commencer le service`;
+                } else {
+                    btn.setAttribute('disabled', 'true');
+                    btn.className = "btn-commencer-conduite sv-btn";
+                    btn.innerHTML = `Départ à ${hhmm(departEffectifTs(sillon))} (${escapeHtml(sillon.dateJJMM)})`;
+                }
+            });
+        }
+
+        function toggleCommencerConduite() {
+            const s = getActif();
+            if (!s || serviceAtteintTerminus) return;
+            if (Date.now() < departEffectifTs(s)) { alert(`Impossible de démarrer : l'heure de départ (${hhmm(departEffectifTs(s))}, ${s.dateJJMM}) n'est pas encore atteinte.`); return; }
+            if (s.isStarted && !confirm('Remettre ce service à « non commencé » ?')) return;
+            if (!s.isStarted) calculerRetardAutomatique(activeSillonIndex);
+            s.isStarted = !s.isStarted;
+            sauvegarderStorage(true);
+            updateBoutonConduiteUI();
+            mettreAJourAffichageRetard();
+        }
+
+        function updateBoutonConduiteUI() {
+            const sillon = getActif();
+            if (!sillon) return;
+            if (!sillon.isStarted) { verifierHeureDepartAtteinte(); return; }
+            document.querySelectorAll('.btn-commencer-conduite').forEach(btn => {
+                btn.dataset.st = 'run';
+                btn.removeAttribute('disabled');
+                btn.className = "btn-commencer-conduite sv-btn sv-run";
+                btn.innerHTML = `<i class="fa-solid fa-train"></i> Train en route`;
+            });
+        }
+
+        function verifierBoutonFinService() {
+            if (!heureArriveeFinaleTs || serviceAtteintTerminus || Date.now() < heureArriveeFinaleTs) return;
+            serviceAtteintTerminus = true;
+            setFinEtat(true);
+            calculerHorairesParcours();
+        }
+
+        // Contrôle d'un sillon : depuis la cabine (sillon actif) ou depuis la liste des sillons (controleIndex)
+        let controleIndex = null;
+        function cibleControle() { return controleIndex !== null ? (sillonsState[controleIndex] || null) : getActif(); }
+        function ouvrirControle(fn, index) { controleIndex = index; fn(); if (cibleControle() === null) controleIndex = null; }
+        function finControle(fermer) {
+            const hors = controleIndex !== null && controleIndex !== activeSillonIndex;
+            fermer();
+            if (!hors) { mettreAJourAffichageRetard(); calculerHorairesParcours(); verifierHeureDepartAtteinte(); }
+            renderSillons();
+        }
+
+        function openArretSupModal() {
+            const s = cibleControle(); if (!s) return;
+            const sup = s.arretsSupprimes || [];
+            document.getElementById('arret-sup-liste').innerHTML = garesDesservies(s).map(g => `
+                <div class="sup-gare-row flex items-center justify-between bg-snck-dark border border-snck-border rounded-xl p-3" data-gare="${escapeHtml(g)}">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="sup-gare-on rounded bg-snck-dark border-snck-border text-red-500" ${sup.includes(g) ? 'checked' : ''}> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
+                    <span class="text-[11px] text-red-400">${sup.includes(g) ? 'Arrêt supprimé' : ''}</span>
+                </div>`).join('');
+            document.getElementById('modal-arret-sup').classList.remove('hidden');
+        }
+        function closeArretSupModal() { controleIndex = null; document.getElementById('modal-arret-sup').classList.add('hidden'); }
+        function handleArretSup(e) {
+            e.preventDefault();
+            const s = cibleControle(); if (!s) return;
+            s.arretsSupprimes = [...document.querySelectorAll('.sup-gare-row')].filter(r => r.querySelector('.sup-gare-on').checked).map(r => r.dataset.gare);
+            sauvegarderStorage(true);
+            finControle(closeArretSupModal);
+        }
+
+        function openArretExcModal() {
+            const s = cibleControle(); if (!s) return;
+            const elig = eligiblesExc(s), exc = s.exceptionnels || {};
+            document.getElementById('arret-exc-liste').innerHTML = elig.length ? elig.map(g => {
+                const on = exc[g] !== undefined;
+                return `<div class="exc-gare-row flex items-center justify-between bg-snck-dark border border-snck-border rounded-xl p-3" data-gare="${escapeHtml(g)}">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="exc-gare-on rounded bg-snck-dark border-snck-border text-rose-500" ${on ? 'checked' : ''}> ${escapeHtml(LIBELLES_GARES[g] || g)}</label>
+                    <span class="flex items-center gap-1 text-xs text-gray-400"><input type="number" min="0" class="exc-gare-duree w-16 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white text-center" value="${on ? exc[g] : 1}"> min</span>
+                </div>`;
+            }).join('') : '<div class="text-sm text-gray-400 text-center py-4">Aucune gare disponible pour un arrêt exceptionnel sur ce parcours.</div>';
+            document.getElementById('modal-arret-exc').classList.remove('hidden');
+        }
+        function closeArretExcModal() { controleIndex = null; document.getElementById('modal-arret-exc').classList.add('hidden'); }
+        function handleArretExc(e) {
+            e.preventDefault();
+            const s = cibleControle(); if (!s) return;
+            const exc = {};
+            document.querySelectorAll('.exc-gare-row').forEach(row => {
+                if (row.querySelector('.exc-gare-on').checked) exc[row.dataset.gare] = Math.max(0, parseInt(row.querySelector('.exc-gare-duree').value, 10) || 0);
+            });
+            s.exceptionnels = exc;
+            sauvegarderStorage(true);
+            finControle(closeArretExcModal);
+        }
+
+        function openRetardModal() {
+            const s = cibleControle(); if (!s) return;
+            const man = Number(s.retardManuel) || 0;
+            document.getElementById('retard-mode').value = aRetardsGares(s) ? 'gares' : 'global';
+            document.getElementById('retard-type').value = man < 0 ? 'avance' : 'retard';
+            document.getElementById('retard-minutes').value = man ? Math.abs(man) : 5;
+            document.getElementById('retard-motif').value = s.motifRetard || '';
+            document.getElementById('retard-gares-liste').innerHTML = garesDesservies(s).map(g => {
+                const p = (s.retardsGares || {})[g] || {};
+                const v = Number.isFinite(Number(p.min)) && p.min !== undefined && p.min !== null ? p.min : '';
+                return `<div class="retard-gare-row grid grid-cols-[1fr_88px] gap-2 items-center bg-snck-dark border border-snck-border rounded-xl p-2" data-gare="${escapeHtml(g)}">
+                    <span class="text-sm font-semibold px-1">${escapeHtml(g)}</span>
+                    <input type="number" step="1" class="retard-gare-min bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-sm text-white text-center" placeholder="=" value="${v}">
+                    <input type="text" class="retard-gare-motif col-span-2 bg-snck-card border border-snck-border rounded-lg px-2 py-1 text-xs text-white" placeholder="Motif pour cette gare (optionnel)" value="${escapeHtml(p.motif || '')}">
+                </div>`;
+            }).join('');
+            changerModeRetard();
+            document.getElementById('modal-retard').classList.remove('hidden');
+        }
+        function changerModeRetard() {
+            const gares = document.getElementById('retard-mode').value === 'gares';
+            document.getElementById('retard-bloc-global').classList.toggle('hidden', gares);
+            document.getElementById('retard-bloc-gares').classList.toggle('hidden', !gares);
+            document.getElementById('retard-minutes').required = !gares;
+            document.getElementById('retard-motif').required = !gares;
+            document.getElementById('retard-motif-label').innerText = gares ? 'Motif général (optionnel si renseigné par gare)' : 'Motif';
+        }
+        function closeRetardModal() { controleIndex = null; document.getElementById('modal-retard').classList.add('hidden'); }
+
+        function handleSignalerRetardAvance(e) {
+            e.preventDefault();
+            const s = cibleControle(); if (!s) return;
+            const ancien = s.retardManuel || 0;
+            if (s.retardAuto === undefined) s.retardAuto = Math.max(0, (s.retard || 0) - ancien);
+            s.motifRetard = document.getElementById('retard-motif').value.trim();
+            if (document.getElementById('retard-mode').value === 'gares') {
+                const p = {};
+                document.querySelectorAll('.retard-gare-row').forEach(row => {
+                    const v = row.querySelector('.retard-gare-min').value.trim();
+                    if (v === '' || !Number.isFinite(parseInt(v, 10))) return;
+                    p[row.dataset.gare] = { min: parseInt(v, 10), motif: row.querySelector('.retard-gare-motif').value.trim() };
+                });
+                if (!Object.keys(p).length) { alert('Renseigne un écart pour au moins une gare.'); return; }
+                s.retardsGares = p;
+                s.retardManuel = 0;
+            } else {
+                const mins = parseInt(document.getElementById('retard-minutes').value) || 0;
+                delete s.retardsGares;
+                s.retardManuel = document.getElementById('retard-type').value === 'avance' ? -mins : mins;
+            }
+            s.retard = retardA(s, s.origine);
+            sauvegarderStorage(true);
+            finControle(closeRetardModal);
+        }
+
+        function effacerRetardsManuels() {
+            const s = cibleControle(); if (!s) return;
+            if (!confirm('Effacer les retards / avances saisis pour ce train ?')) return;
+            if (s.retardAuto === undefined) s.retardAuto = Math.max(0, (s.retard || 0) - (s.retardManuel || 0));
+            delete s.retardsGares; s.retardManuel = 0; s.motifRetard = '';
+            s.retard = retardA(s, s.origine);
+            sauvegarderStorage(true);
+            finControle(closeRetardModal);
+        }
+
+        function ouvrirFicheFinService() {
+            const sillon = getActif(); if (!sillon) return;
+            document.getElementById('fiche-numero').innerText = sillon.numero;
+            document.getElementById('fiche-parcours').innerText = `${sillon.dateJJMM} • ${sillon.origine} ➔ ${sillon.terminus}`;
+            document.getElementById('modal-fiche-fin').classList.remove('hidden');
+        }
+
+        function validerEtQuitterService() {
+            if (activeSillonIndex !== null) {
+                sillonsState.splice(activeSillonIndex, 1);
+                sauvegarderStorage();
+                activeSillonIndex = null;
+            }
+            document.getElementById('modal-fiche-fin').classList.add('hidden');
+            document.getElementById('tel-btn-retour').style.display = 'flex';
+            document.getElementById('pc-btn-retour').style.display = 'flex';
+            openConduireModule(currentPlatform);
+        }
+
+
+        // ============================================================
+        // FONCTIONNALITÉS AJOUTÉES
+        // ============================================================
+
+        // Détection plateforme : verrouiller par cadenas le mode inadapté à l'écran
+        function detecterPlateforme() {
+            const btnTel = document.getElementById('btn-mode-tel');
+            const btnPc = document.getElementById('btn-mode-pc');
+            const lockTel = document.getElementById('tel-lock-badge');
+            const lockPc = document.getElementById('pc-lock-badge');
+            const isPc = window.innerWidth >= 768; // Tablette et plus grand -> mode PC
+            // Mode Téléphone verrouillé sur grand écran
+            if (btnTel) {
+                btnTel.classList.toggle('pointer-events-none', isPc);
+                if (lockTel) lockTel.classList.toggle('hidden', !isPc);
+            }
+            // Mode PC verrouillé sur petit écran
+            if (btnPc) {
+                btnPc.classList.toggle('pointer-events-none', !isPc);
+                if (lockPc) lockPc.classList.toggle('hidden', isPc);
+            }
+        }
+        window.addEventListener('resize', detecterPlateforme);
+
+        // Menu Horairiste & Perturbations
+        function openHorairistePerturbations() {
+            switchScreen('screen-hp-menu');
+        }
+
+        // Module Perturbations
+        function openPerturbationsModule() {
+            switchScreen('screen-perturbations');
+            renderPerturbations();
+        }
+
+        // Gestion des perturbations (stockées dans localStorage)
+        let perturbationsState = JSON.parse(localStorage.getItem('snck_perturbations')) || [];
+
+        function handleSignalerPerturbation(e) {
+            e.preventDefault();
+            const nom = document.getElementById('perturbation-nom').value.trim();
+            const type = document.getElementById('perturbation-type').value;
+            const heureFin = document.getElementById('perturbation-heure-fin').value;
+            const ligne = document.getElementById('perturbation-ligne').value;
+
+            const perturbation = {
+                id: uuid(),
+                nom, type, heureFin, ligne,
+                dateCreation: new Date().toLocaleString('fr-FR'),
+                actif: true
+            };
+
+            perturbationsState.push(perturbation);
+            localStorage.setItem('snck_perturbations', JSON.stringify(perturbationsState));
+
+            // Synchroniser les perturbations avec les autres appareils.
+            sauvegarderPerturbationsCloud();
+
+            // Réinitialiser le formulaire
+            document.getElementById('perturbation-nom').value = '';
+            document.getElementById('perturbation-heure-fin').value = '';
+
+            renderPerturbations();
+            alert('Perturbation publiée sur le réseau !');
+        }
+
+        function sauvegarderPerturbationsCloud() { cloudSave(true); }
+
+        function renderPerturbations() {
+            const container = document.getElementById('liste-perturbations');
+            if (!container) return;
+            if (perturbationsState.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 bg-snck-card border border-snck-border rounded-2xl text-gray-400 text-sm">Aucune perturbation signalée.</div>';
+                return;
+            }
+            container.innerHTML = '<h3 class="text-lg font-bold mb-3">Perturbations actives</h3>';
+            perturbationsState.forEach((p, idx) => {
+                const couleur = p.type === 'Interruption' ? 'red' : 'amber';
+                container.innerHTML += `
+                    <div class="bg-snck-card border border-${couleur}-500/30 rounded-xl p-4 flex justify-between items-center">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-xs bg-${couleur}-500/10 text-${couleur}-400 border border-${couleur}-500/20 font-bold">${escapeHtml(p.type)}</span>
+                                <span class="font-bold">${escapeHtml(p.nom)}</span>
+                            </div>
+                            <div class="text-xs text-gray-400">
+                                <i class="fa-solid fa-route mr-1"></i> ${escapeHtml(p.ligne)} 
+                                | <i class="fa-solid fa-clock mr-1"></i> Fin prévue : ${escapeHtml(p.heureFin)}
+                                | <i class="fa-solid fa-calendar mr-1"></i> ${escapeHtml(p.dateCreation)}
+                            </div>
+                        </div>
+                        <button onclick="supprimerPerturbation(${idx})" class="px-3 py-1.5 bg-red-500/10 text-red-400 text-xs rounded-lg hover:bg-red-500/20 cursor-pointer shrink-0 ml-3">
+                            <i class="fa-solid fa-trash mr-1"></i> Retirer
+                        </button>
+                    </div>`;
+            });
+        }
+
+        function supprimerPerturbation(idx) {
+            if (confirm('Retirer cette perturbation ?')) {
+                perturbationsState.splice(idx, 1);
+                localStorage.setItem('snck_perturbations', JSON.stringify(perturbationsState));
+                sauvegarderPerturbationsCloud();
+                renderPerturbations();
+            }
+        }
+
+        // Supprimer le Service depuis la Cabine
+        function supprimerService() {
+            if (!confirm('Supprimer ce service ? Le sillon restera visible jusqu\'à son heure d\'arrivée au terminus, mais sera marqué comme supprimé.')) return;
+
+            if (activeSillonIndex !== null) {
+                let sillon = sillonsState[activeSillonIndex];
+                // Marquer comme supprimé au lieu de le retirer
+                sillon.statut = 'Supprimé';
+                sillon.serviceSupprime = true;
+                sauvegarderStorage();
+                activeSillonIndex = null;
+            }
+
+            // Réafficher les boutons retour
+            document.getElementById('tel-btn-retour').style.display = 'flex';
+            document.getElementById('pc-btn-retour').style.display = 'flex';
+            openConduireModule(currentPlatform);
+        }
+
+        // ============================================================
+        // GESTION DU PARC MATÉRIEL
+        // ============================================================
+        const STATUTS_MANUELS = ['Disponible', 'En réserve', 'En maintenance', 'Immobilisé'];
+        let parcPlatform = 'pc', matEditId = null;
+        // Un matériel est "en fonction" tant qu'un service non supprimé (donc non terminé réellement) le détient : statut calculé, jamais écrasé.
+        function serviceDuMateriel(m) { return sillonsState.find(x => x.materielId === m.id && !x.serviceSupprime && x.statut !== 'Supprimé') || null; }
+        function statutMateriel(m) { const sv = serviceDuMateriel(m); return sv ? 'En fonction sur le ' + sv.numero : (STATUTS_MANUELS.includes(m.statut) ? m.statut : 'Disponible'); }
+        function sauvegarderParc() { localStorage.setItem('snck_parc', JSON.stringify(parcState)); cloudSave(true); rafraichirParc(); }
+        function openParcMenu(platform) { parcPlatform = platform; switchScreen('screen-parc-menu'); }
+        function parcRetour() { switchScreen(parcPlatform === 'tel' ? 'screen-tel-menu' : 'screen-pc-menu'); }
+        function openParcListe() { switchScreen('screen-parc-liste'); renderParc(); }
+        function rafraichirParc() { renderParc(); remplirMaterielsSillon(); renderPositions(); }
+        function remplirMaterielsSillon() {
+            const sel = document.getElementById('sillon-composition'); if (!sel) return;
+            const prev = sel.value, dispo = parcState.filter(m => statutMateriel(m) === 'Disponible'), msg = document.getElementById('sillon-materiel-msg');
+            sel.innerHTML = '<option value="">' + (dispo.length ? '— Choisir un matériel —' : 'Aucun matériel disponible') + '</option>' +
+                dispo.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.numero + (m.type ? ' — ' + m.type : '') + (m.nom ? ' (' + m.nom + ')' : ''))}</option>`).join('');
+            if (dispo.some(m => m.id === prev)) sel.value = prev;
+            msg.classList.toggle('hidden', dispo.length > 0);
+            msg.textContent = parcState.length ? "Aucun matériel disponible : tous sont affectés à un service, en réserve, en maintenance ou immobilisés (Gestion du parc)." : "Le parc est vide : enregistrez d'abord un matériel dans Gestion du parc.";
+        }
+        function renderParc() {
+            const box = document.getElementById('parc-liste'); if (!box) return;
+            document.getElementById('parc-count').textContent = parcState.length + ' matériel' + (parcState.length > 1 ? 's' : '');
+            document.getElementById('parc-btn-ajout').style.display = parcState.length ? '' : 'none';
+            if (!parcState.length) {
+                box.innerHTML = '<div class="text-center py-12 bg-snck-card border border-snck-border rounded-2xl text-gray-400 space-y-4"><div>Aucun matériel enregistré</div><button onclick="ouvrirMaterielModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-xl cursor-pointer text-sm">+ En ajouter un</button></div>';
+                return;
+            }
+            const btn = 'px-3 py-1.5 text-xs rounded-lg cursor-pointer border ';
+            box.innerHTML = [...parcState].sort((a, b) => String(a.numero).localeCompare(String(b.numero), 'fr', { numeric: true })).map(m => {
+                const sv = serviceDuMateriel(m), st = statutMateriel(m);
+                const badge = sv ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : st === 'Disponible' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : st === 'En réserve' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
+                const id = escapeHtml(m.id);
+                return `<div class="bg-snck-card border border-snck-border rounded-2xl p-5 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <div class="space-y-1 text-sm">
+                        <div><span class="px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-mono font-bold">${escapeHtml(m.numero)}</span>
+                        <span class="ml-3 px-2 py-0.5 rounded text-xs border ${badge}">${escapeHtml(st)}</span></div>
+                        <div class="text-xs text-gray-400">${escapeHtml([m.type, m.nom].filter(Boolean).join(' • ') || '—')}</div>
+                        <div class="text-xs text-gray-400"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(m.gare ? m.gare + (m.voie ? ' — ' + m.voie : '') : 'Position non renseignée')}</div>
+                    </div>
+                    <div class="flex flex-wrap md:justify-end items-center gap-2">
+                        ${sv ? '' : `<select onchange="changerStatutMateriel('${id}', this.value)" class="bg-snck-dark border border-snck-border rounded-lg px-2 py-1.5 text-xs text-white cursor-pointer">${STATUTS_MANUELS.map(x => `<option ${x === m.statut ? 'selected' : ''}>${x}</option>`).join('')}</select>`}
+                        <button onclick="ouvrirMaterielModal('${id}', true)" class="${btn}bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20">Consulter</button>
+                        <button onclick="ouvrirMaterielModal('${id}')" class="${btn}bg-gray-500/10 border-gray-500/20 text-gray-300 hover:bg-gray-500/20">Modifier</button>
+                        ${sv ? `<button onclick="desaffecterMateriel('${id}')" class="${btn}bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20">Désaffecter</button>` : ''}
+                        <button onclick="supprimerMateriel('${id}')" class="${btn}bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20">Supprimer</button>
+                    </div></div>`;
+            }).join('');
+        }
+        function ouvrirMaterielModal(id, lecture) {
+            const m = id ? parcState.find(x => x.id === id) : null; if (id && !m) return;
+            matEditId = m ? m.id : null;
+            const sv = m ? serviceDuMateriel(m) : null;
+            document.getElementById('mat-titre').textContent = lecture ? 'Fiche du matériel' : m ? 'Modifier le matériel' : 'Ajouter un matériel';
+            document.getElementById('mat-numero').value = m ? m.numero : '';
+            document.getElementById('mat-type').value = m ? m.type || '' : '';
+            document.getElementById('mat-nom').value = m ? m.nom || '' : '';
+            document.getElementById('mat-gare').innerHTML = '<option value="">— Non renseignée —</option>' + GARES_PARC.map(g => `<option>${g}</option>`).join('');
+            document.getElementById('mat-gare').value = m && GARES_PARC.includes(m.gare) ? m.gare : '';
+            document.getElementById('mat-voie').value = m && m.gare ? m.voie || '' : '';
+            majVoiesDatalist();
+            document.getElementById('mat-types').innerHTML = [...new Set(parcState.map(x => x.type).filter(Boolean))].map(t => `<option value="${escapeHtml(t)}">`).join('');
+            const sel = document.getElementById('mat-statut');
+            sel.innerHTML = STATUTS_MANUELS.map(x => `<option>${x}</option>`).join('') + `<option value="__auto" disabled>${sv ? escapeHtml('En fonction sur le ' + sv.numero) : 'En fonction sur le … (automatique)'}</option>`;
+            sel.value = sv ? '__auto' : (m && STATUTS_MANUELS.includes(m.statut) ? m.statut : 'Disponible');
+            document.getElementById('mat-info').textContent = sv ? 'Statut géré automatiquement par Sirius tant que le service est en cours.' : '';
+            ['mat-numero', 'mat-type', 'mat-nom', 'mat-gare', 'mat-voie'].forEach(i => document.getElementById(i).disabled = !!lecture);
+            sel.disabled = !!lecture || !!sv;
+            document.getElementById('mat-enregistrer').style.display = lecture ? 'none' : '';
+            document.getElementById('mat-annuler').textContent = lecture ? 'Fermer' : 'Annuler';
+            document.getElementById('modal-materiel').classList.remove('hidden');
+        }
+        function fermerMaterielModal() { document.getElementById('modal-materiel').classList.add('hidden'); matEditId = null; }
+        function enregistrerMateriel(e) {
+            e.preventDefault();
+            const numero = document.getElementById('mat-numero').value.trim();
+            if (!numero) return;
+            if (parcState.some(x => x.id !== matEditId && String(x.numero).trim().toLowerCase() === numero.toLowerCase())) { alert('Un matériel portant le numéro ' + numero + ' existe déjà.'); return; }
+            const type = document.getElementById('mat-type').value.trim(), nom = document.getElementById('mat-nom').value.trim(), st = document.getElementById('mat-statut').value;
+            const gare = document.getElementById('mat-gare').value, voie = gare ? document.getElementById('mat-voie').value.trim() : '';
+            const m = matEditId ? parcState.find(x => x.id === matEditId) : null;
+            if (m) {
+                m.gare = gare; m.voie = voie;
+                const ancien = m.numero; m.numero = numero; m.type = type; m.nom = nom;
+                if (STATUTS_MANUELS.includes(st)) m.statut = st;
+                if (ancien !== numero) sillonsState.forEach(x => { if (x.materielId === m.id) { x.materielNumero = numero; x.composition = numero + (type ? ' - ' + type : ''); } });
+                if (ancien !== numero) sauvegarderStorage(true);
+            } else parcState.push({ id: uuid(), numero, type, nom, gare, voie, statut: STATUTS_MANUELS.includes(st) ? st : 'Disponible' });
+            fermerMaterielModal(); sauvegarderParc();
+        }
+        function changerStatutMateriel(id, v) {
+            const m = parcState.find(x => x.id === id);
+            if (!m || serviceDuMateriel(m) || !STATUTS_MANUELS.includes(v)) { renderParc(); return; }
+            m.statut = v; sauvegarderParc();
+        }
+        function supprimerMateriel(id) {
+            const m = parcState.find(x => x.id === id); if (!m) return;
+            if (serviceDuMateriel(m)) { alert('Ce matériel est en fonction sur un service : désaffectez-le avant de le supprimer.'); return; }
+            if (!confirm('Supprimer le matériel ' + m.numero + ' ? Les anciens sillons qui l\'ont utilisé restent inchangés.')) return;
+            parcState = parcState.filter(x => x.id !== id); sauvegarderParc();
+        }
+        function desaffecterMateriel(id) {
+            const m = parcState.find(x => x.id === id), sv = m && serviceDuMateriel(m); if (!sv) return;
+            if (sv.statut === 'En Service') { alert('Le service ' + sv.numero + ' est en cours de conduite : impossible de désaffecter le matériel.'); return; }
+            if (!confirm('Désaffecter ' + m.numero + ' du service ' + sv.numero + ' ?')) return;
+            sv.materielId = null; sv.composition = '— (non affecté)';
+            sauvegarderStorage(true);
+        }
+
+        // ---- Position des rames (gare + voie stockées sur la fiche du matériel : une seule position par matériel) ----
+        const GARES_PARC = ['Fontaine', 'Mairie', 'Hôpital', 'Ville', 'Zoo', 'Pavillon Noir', 'Dépôt'];
+        const VOIES_GARE = { 'Fontaine': ['A', 'B', 'C', 'D', 'E', 'F', 'S1', 'S2'], 'Mairie': ['A', 'B'], 'Hôpital': ['C', 'D'], 'Ville': ['A', 'B', 'C', 'D'], 'Zoo': ['A', 'B'], 'Pavillon Noir': ['A', 'B'], 'Dépôt': [] };
+        let posGare = null; // null = liste des gares, -1 = sans position, sinon index dans GARES_PARC
+        function majVoiesDatalist() {
+            const g = document.getElementById('mat-gare').value;
+            const l = [...new Set([...(VOIES_GARE[g] || []).map(v => 'Voie ' + v), ...parcState.filter(x => x.gare === g && x.voie).map(x => x.voie)])];
+            document.getElementById('mat-voies').innerHTML = l.map(v => `<option value="${escapeHtml(v)}">`).join('');
+        }
+        function openParcPositions() { posGare = null; switchScreen('screen-parc-position'); renderPositions(); }
+        function openPosGare(i) { posGare = i; renderPositions(); }
+        function renderPositions() {
+            const box = document.getElementById('pos-contenu'); if (!box) return;
+            const ici = i => parcState.filter(m => i < 0 ? !GARES_PARC.includes(m.gare) : m.gare === GARES_PARC[i]);
+            const ligne = (i, nom) => `<button onclick="openPosGare(${i})" class="w-full flex items-center justify-between p-4 rounded-2xl bg-snck-card border border-snck-border hover:border-amber-500 text-left cursor-pointer"><span class="font-semibold">${escapeHtml(nom)}</span><span class="text-xs font-mono bg-snck-dark border border-snck-border px-3 py-1 rounded-full text-gray-400">${ici(i).length} matériel${ici(i).length > 1 ? 's' : ''}</span></button>`;
+            if (posGare === null) {
+                box.innerHTML = GARES_PARC.map((g, i) => ligne(i, g)).join('') + (ici(-1).length ? '<div class="pt-3 text-xs text-gray-500">Matériels sans position :</div>' + ligne(-1, 'Position non renseignée') : '');
+                return;
+            }
+            const liste = ici(posGare).sort((a, b) => String(a.voie || '~').localeCompare(String(b.voie || '~'), 'fr', { numeric: true }) || String(a.numero).localeCompare(String(b.numero), 'fr', { numeric: true }));
+            box.innerHTML = `<button onclick="openPosGare(null)" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-snck-dark border border-snck-border text-sm flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Liste des gares</button>
+                <h3 class="text-2xl font-bold">${escapeHtml(posGare < 0 ? 'Position non renseignée' : GARES_PARC[posGare])}</h3>` +
+                (liste.length ? `<div class="bg-snck-card border border-snck-border rounded-2xl overflow-hidden"><div class="grid grid-cols-[1fr_1fr_auto] gap-3 px-4 py-2 text-xs text-gray-400 border-b border-snck-border"><span>Matériel</span><span>Voie</span><span></span></div>` +
+                    liste.map(m => `<div class="grid grid-cols-[1fr_1fr_auto] gap-3 items-center px-4 py-3 border-b border-snck-border last:border-0 text-sm"><span><b class="font-mono text-amber-400">${escapeHtml(m.numero)}</b>${m.type ? `<span class="block text-xs text-gray-400">${escapeHtml(m.type)}</span>` : ''}</span><span>${escapeHtml(m.voie || '—')}</span><button onclick="ouvrirMaterielModal('${escapeHtml(m.id)}')" class="px-3 py-1.5 text-xs rounded-lg cursor-pointer border bg-gray-500/10 border-gray-500/20 text-gray-300 hover:bg-gray-500/20">Déplacer</button></div>`).join('') + '</div>'
+                : '<div class="text-center py-12 bg-snck-card border border-snck-border rounded-2xl text-gray-400">Aucun matériel stationné ici actuellement.</div>');
+        }
+
+        function uuid() { return crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
+        function copierTexte(t) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).catch(() => prompt('Copie manuelle :', t)); }
+        function viderCachesLocaux() {
+            sillonsState = []; perturbationsState = []; parcState = []; activeSillonIndex = null;
+            localStorage.removeItem('snck_parc'); localStorage.removeItem('snck_sillons'); localStorage.removeItem('snck_perturbations');
+        }
+        function getActif() { return activeSillonIndex === null ? null : (sillonsState[activeSillonIndex] || null); }
+        // Horodatage réel du départ (date + heure) : évite les erreurs de jour / minuit
+        function departTs(s) {
+            const [h, m] = String(s.depart).split(':').map(Number);
+            const d = s.dateBrute ? new Date(s.dateBrute + 'T00:00:00') : new Date();
+            d.setHours(h, m, 0, 0);
+            return d.getTime();
+        }
+        function dureeSegSec(g) {
+            const ligneOrdre = ligneDe(g).ordre, tempsTrajetSecondes = ligneDe(g).temps;
+            const a = ligneOrdre.indexOf(g.origine), b = ligneOrdre.indexOf(g.terminus), dir = b > a ? 1 : -1;
+            const gares = dir > 0 ? ligneOrdre.slice(a, b + 1) : ligneOrdre.slice(b, a + 1).reverse();
+            let t = 0;
+            for (let i = 1; i < gares.length; i++) {
+                t += tempsTrajetSecondes[dir > 0 ? `${gares[i-1]}->${gares[i]}` : `${gares[i]}->${gares[i-1]}`] || 0;
+                if ((g.arretsInter || []).includes(gares[i-1])) t += ((g.arretsDurees || {})[gares[i-1]] || 0) * 60;
+            }
+            return t;
+        }
+        function dureeSec(s) {
+            return troncons(s).reduce((t, g, i) => t + dureeSegSec(g) + (i > 0 ? (Number(g.attenteOrigine) || 0) * 60 : 0), 0);
+        }
+        function setFinEtat(on) {
+            document.querySelectorAll('#pc-btn-fin-service, #tel-btn-b3').forEach(b => {
+                b.disabled = !on;
+            });
+            document.querySelectorAll('.fin-service-timer').forEach(t => t.innerText = on ? `Prêt (${heureArriveeFinaleReelle})` : 'En attente');
+        }
+        function entrerCabine(index) {
+            activeSillonIndex = index;
+            const sillon = sillonsState[index];
+            serviceAtteintTerminus = false; heureArriveeFinaleTs = null; heureArriveeFinaleReelle = null;
+            setFinEtat(false);
+            document.querySelectorAll('.btn-commencer-conduite').forEach(b => b.dataset.st = '');
+            document.getElementById('tel-btn-retour').style.display = 'none';
+            document.getElementById('pc-btn-retour').style.display = 'none';
+            if (currentPlatform === 'tel') {
+                switchScreen('screen-cabine-tel');
+                document.getElementById('tel-cabine-titre').innerText = sillon.numero;
+                document.getElementById('tel-cabine-sous-titre').innerText = `${sillon.origine} > ${sillon.terminus}`;
+                document.getElementById('tel-cabine-date-comp').innerText = `${sillon.dateJJMM} • ${sillon.composition}`;
+            } else {
+                switchScreen('screen-cabine-pc');
+                document.getElementById('pc-cabine-numero').innerText = sillon.numero;
+                document.getElementById('pc-cabine-titre').innerText = `${sillon.origine} > ${sillon.terminus}`;
+                document.getElementById('pc-cabine-date').innerText = `Date : ${sillon.dateJJMM} • Conducteur : ${currentUser}`;
+            }
+            updateBoutonConduiteUI();
+            calculerRetardAutomatique(index);
+            calculerHorairesParcours();
+            verifierHeureDepartAtteinte();
+        }
+        function reprendreService(index) {
+            const s = sillonsState[index];
+            if (s && s.statut === 'En Service' && (s.conducteur || currentUser) === currentUser) { s.conducteur = currentUser; entrerCabine(index); }
+        }
+        // Les services supprimés disparaissent une fois l'heure d'arrivée passée
+        function purgerSillonsSupprimes() {
+            const now = Date.now(), act = getActif();
+            const keep = sillonsState.filter(s => !(s.serviceSupprime && now > departTs(s) + (retardA(s, s.terminus) * 60 + dureeSec(s)) * 1000));
+            if (keep.length === sillonsState.length) return;
+            sillonsState = keep;
+            activeSillonIndex = act ? sillonsState.indexOf(act) : null;
+            if (activeSillonIndex === -1) activeSillonIndex = null;
+            sauvegarderStorage(); renderSillons(); renderSillonsConduite();
+        }
+        setInterval(() => { if (currentUser && cloudReady) purgerSillonsSupprimes(); }, 30000);
+
+        function deleteSillon(index) {
+            if (confirm("Supprimer ce sillon ?")) {
+                sillonsState.splice(index, 1);
+                sauvegarderStorage();
+                renderSillons();
+            }
+        }
+    </script>
+</body>
+</html>
